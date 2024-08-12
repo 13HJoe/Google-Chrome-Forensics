@@ -37,20 +37,55 @@ def get_chrome(db=None):
         # create user-defined SQL function
         # create_function(name_of_new_func, no_of_args, callback_func)
         def decrypt(v):
-            iv = v[3:15]
-            payload = v[15:]
-            cipher = new(key, AES.MODE_GCM, iv)
-            value = cipher.decrypt(payload)[:-16]
-            return value.decode()
+            try:
+                iv = v[3:15]
+                payload = v[15:]
+                cipher = new(key, AES.MODE_GCM, iv)
+                value = cipher.decrypt(payload)[:-16]
+                return value.decode()
+            except:
+                return None
 
         connection.create_function('decrypt',1,decrypt)
         #result = connection.execute("SELECT * from sqlite_master where type='table'")
         cursor = connection.cursor()
         c = 0
-        for row in cursor.execute("SELECT name, encrypted_value FROM cookies"):
-            #print(row)
-            print(decrypt(row[1]))
-            break
+
+        result_data = {}
+        for row in cursor.execute("SELECT host_key, name, encrypted_value FROM cookies"):
+            host_key = row[0]
+            data = {
+                'name' : row[1],
+                'decrypted_value': decrypt(row[2])
+            }
+            if host_key not in result_data:
+                result_data[host_key] = []
+            result_data[host_key].append(data)
+        
+        print(len(result_data))
+        result_data = result_data
+        c = 0
+        for host, cookies in result_data.items():
+            print("-"*60)
+            print(f"Host: {host}")
+            for cookies in cookies:
+                print()
+                for key, val in cookies.items():
+                    title = key.title().replace('_',' ')
+                    print(f"{title}:{val}")
+                print()
+            
+
+        """
+        for host, cookies in result_data.items():
+            print("=" * 70)
+            print(f"Host: {host}")
+            for cookie in cookies:
+                print("\n")
+                for key, val in cookie.items():
+                    print(f"{key.title().replace('_', ' ')}: {val}")
+            print("=" * 70, "\n")
+        """
         connection.close()
 
 
