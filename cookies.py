@@ -4,8 +4,10 @@ from base64 import b64decode
 from win32.win32crypt import CryptUnprotectData
 from Cryptodome.Cipher.AES import new, MODE_GCM
 from Crypto.Cipher import AES
+from glob import glob
+import os
 
-def get_key(data):
+def get_chrome_cookies_master_key(data):
     os_crypt = data['os_crypt']
     encrypted_key = os_crypt['encrypted_key']
     decode_enc_key = b64decode(encrypted_key)
@@ -19,10 +21,8 @@ def get_key(data):
     key = unprotect_data[1]
     return key
 
-
-def get_chrome(db=None):
+def get_chrome_cookies(db=None):
     if db is None:
-        from os.path import expandvars
         # Return the argument with environment variables expanded
         db = expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/Network/Cookies')
         f_obj = open(db+'/../../../Local State', 'rb')
@@ -31,7 +31,7 @@ def get_chrome(db=None):
         # Deserialize s (a str, bytes or bytearray instance containing a JSON document) 
         # to a Python object using this conversion table.
         data = json.loads(data)
-        key = get_key(data)
+        key = get_cookies_master_key(data)
 
         connection = sqlite3.connect(db)
         # create user-defined SQL function
@@ -74,20 +74,27 @@ def get_chrome(db=None):
                     title = key.title().replace('_',' ')
                     print(f"{title}:{val}")
                 print()
-            
-
-        """
-        for host, cookies in result_data.items():
-            print("=" * 70)
-            print(f"Host: {host}")
-            for cookie in cookies:
-                print("\n")
-                for key, val in cookie.items():
-                    print(f"{key.title().replace('_', ' ')}: {val}")
-            print("=" * 70, "\n")
-        """
         connection.close()
 
+def get_firefox_cookies():
+    app_data = os.getenv('APPDATA')
+    profile_directory = os.path.join(app_data,'Mozilla','Firefox','Profiles')
+    profile = os.listdir(profile_directory)[0]
+    cookies_db = os.path.join(profile_directory,profile,'cookies.sqlite')
+    conn = sqlite3.connect(cookies_db)
+    cursor = conn.cursor()
+    cursor.execute('SELECT host, name, value from moz_cookies')
+    cookies = cursor.fetchall()
+    # GROUP cookies by [Host]
+    ret_cookies = {}
+    for res in cookies:
+        if res[0] not in ret_cookies.keys():
+            ret_cookies[res[0]] = []
+        ret_cookies[res[0]].append(res[1:])
 
-        
-get_chrome()
+    for res in ret_cookies:
+        print("-"*60)
+        print(res)
+        for pair in ret_cookies[res]:
+            print(pair)
+    conn.close()
