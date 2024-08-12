@@ -24,14 +24,14 @@ def get_chrome_cookies_master_key(data):
 def get_chrome_cookies(db=None):
     if db is None:
         # Return the argument with environment variables expanded
-        db = expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/Network/Cookies')
+        db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/Network/Cookies')
         f_obj = open(db+'/../../../Local State', 'rb')
         data = f_obj.read()
         data = data.decode('utf-8')
         # Deserialize s (a str, bytes or bytearray instance containing a JSON document) 
         # to a Python object using this conversion table.
         data = json.loads(data)
-        key = get_cookies_master_key(data)
+        key = get_chrome_cookies_master_key(data)
 
         connection = sqlite3.connect(db)
         # create user-defined SQL function
@@ -76,7 +76,9 @@ def get_chrome_cookies(db=None):
                 print()
         connection.close()
 
+
 def get_firefox_cookies():
+
     app_data = os.getenv('APPDATA')
     profile_directory = os.path.join(app_data,'Mozilla','Firefox','Profiles')
     profile = os.listdir(profile_directory)[0]
@@ -98,3 +100,5 @@ def get_firefox_cookies():
         for pair in ret_cookies[res]:
             print(pair)
     conn.close()
+
+get_chrome_cookies()
