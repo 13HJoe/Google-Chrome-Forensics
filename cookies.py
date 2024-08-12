@@ -27,6 +27,7 @@ def get_chrome_cookies(db=None):
         db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/Network/Cookies')
         f_obj = open(db+'/../../../Local State', 'rb')
         data = f_obj.read()
+        f_obj.close()
         data = data.decode('utf-8')
         # Deserialize s (a str, bytes or bytearray instance containing a JSON document) 
         # to a Python object using this conversion table.
