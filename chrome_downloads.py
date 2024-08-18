@@ -21,3 +21,5 @@ with open("test/chrome_download_history.txt",'w') as fobj:
         fobj.write(line+"\n")
         fobj.write("-"*200)
         fobj.write("\n")
+
+connection.close()
