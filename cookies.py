@@ -78,28 +78,5 @@ def get_chrome_cookies(db=None):
         connection.close()
 
 
-def get_firefox_cookies():
-
-    app_data = os.getenv('APPDATA')
-    profile_directory = os.path.join(app_data,'Mozilla','Firefox','Profiles')
-    profile = os.listdir(profile_directory)[0]
-    cookies_db = os.path.join(profile_directory,profile,'cookies.sqlite')
-    conn = sqlite3.connect(cookies_db)
-    cursor = conn.cursor()
-    cursor.execute('SELECT host, name, value from moz_cookies')
-    cookies = cursor.fetchall()
-    # GROUP cookies by [Host]
-    ret_cookies = {}
-    for res in cookies:
-        if res[0] not in ret_cookies.keys():
-            ret_cookies[res[0]] = []
-        ret_cookies[res[0]].append(res[1:])
-
-    for res in ret_cookies:
-        print("-"*60)
-        print(res)
-        for pair in ret_cookies[res]:
-            print(pair)
-    conn.close()
 
 get_chrome_cookies()
