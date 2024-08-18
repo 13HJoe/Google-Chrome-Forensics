@@ -2,7 +2,7 @@ import os
 import sqlite3
 
 
-db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/HIstory')
+db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/History')
 connection = sqlite3.connect(db)
 cursor = connection.cursor()
 cursor.execute("select sql from sqlite_schema where name = 'downloads';")
