@@ -34,13 +34,51 @@ class Block():
                 self.num_bytes = unpack('I', header.read(4))[0]
                 self.last_file = 'f_{:06x}'.format(unpack('I',header.read(4))[0])
                 header.seek(8, 1)
-                self.table_len = unpack('I', header.read(4))[0]
+                self.table_len = unpack('I', header.read(4))[0] # size of entry table
             else:
                  raise Exception("Not a valid index")
+
+class Address():
+    SEPERATE_FILE = 0
+    RANKING_BLOCK = 1
+    BLOCK_256 = 2
+    BLOCK_1024 = 3
+    BLOCK_4096 = 4
+
+    def __init__(self, addr, path):
+        if addr == 0:
+            raise Exception("Null Pointer")
+        
+        self.addr = addr
+        self.path = path
+
+        self.block_type = int(bin(addr)[3:6], 2)
+
+        if self.block_type == Address.SEPERATE_FILE:
+            self.file_name = 'f_{:06x}'.format(int(bin(addr)[6:], 2))
+        elif self.block_type == Address.RANKING_BLOCK:
+            self.file_name = 'data_'+str(int(bin(addr)[10:18],2))
+        else:
+            self.entry_size = Address.type_sizes(self.block_type)
+            self.contiguous_block = str(int(bin(addr)[10:18], 2))
+            self.file_name = 'data_' + str(int(bin(addr)[10:18], 2))
+            self.block_num = int(bin(addr)[18:], 2)
+
+        
 
 if __name__ == "__main__":
     chrome_cache_path = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Cache/Cache_Data/")
 
-    index_path = chrome_cache_path+"index"
+    index_path = os.path.join(chrome_cache_path,"index")
     index_cache_block = Block(index_path)
+    
+    if index_cache_block.block_type != Block.INDEX:
+        raise Exception("Not a valid index")
+    
+    with open(index_path, 'rb') as index:
+        index.seek(92*4) # skip the metadata section
+        cache = []
+        for key in range(index_cache_block.table_len): # for size of entry table
+            raw = unpack('I', index.read(4)[0])
+            if raw != 0:
 
