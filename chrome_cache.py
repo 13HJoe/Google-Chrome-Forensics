@@ -1,6 +1,8 @@
 import os
 from struct import unpack
 import datetime
+import copy
+import re
 
 
 
@@ -65,6 +67,44 @@ class Address():
             self.file_name = 'data_' + str(int(bin(addr)[10:18], 2))
             self.block_num = int(bin(addr)[18:], 2)
 
+class Data():
+    HTTP_HEADER = 0
+    OTHER = 1
+
+    def __init__(self, address, size, ishttpheader=False):
+        self.size = size
+        self.address = address
+        self.data_type = Data.OTHER
+
+        with open(os.path.join(self.address.path, self.address.file_name), 'rb') as data:
+            if self.address.block_type == Address.SEPERATE_FILE:
+                self.data = data.read()
+            else:
+                data.seek(8192 + self.address.block_num * self.address.entry_size)
+                self.data = data.read(size)
+        
+        if ishttpheader and self.address.block_type != Address.SEPERATE_FILE:
+            data_copy = copy.deepcopy(self.data)
+            start = re.search(b'HTTP', data_copy)
+            if start is None:
+                return
+            else:
+                data_copy = data_copy[start.start():]
+            
+            end = re.search(b'\x00\x00', data_copy)
+            if end is None:
+                return
+            else:
+                data_copy = data_copy[:end.end() - 2]
+
+            self.data_type = Data.HTTP_HEADER
+            self.headers = {}
+            for line in data.copy.split(b'\x00')[1:]:
+                strip = line.split(b':')
+                v = b':'.join(strip[1:])
+                v = v.decode(encoding='utf-8')
+                k = strip[0].decode(encoding='utf-8').lower()
+                self.headers[k] = v
 
 class Entry():
     def __init__(self, address):
@@ -82,16 +122,30 @@ class Entry():
             self.long_key = unpack('I',block.read(4))[0]
             self.data_size = [unpack('I',block.read(4))[0] for _ in range(4)]
             self.data = []
-            """
+
             for i in range(4):
                 a = unpack('I', block.read(4))[0]
                 try:
                     addr = Address(a, address.path)
-                    self.data.append(Data)
+                    self.data.append(Data(addr, self.data_size[i], True))
                 except:
                     pass
-            """
             
+            self.httpHeader = None
+            for data in self.data:
+                if data.data_type == Data.HTTP_HEADER:
+                    self.httpHeader = data
+                    break
+            
+            self.flags = unpack('I', block.read(4))[0]
+
+            block.seek(5*4, 1)
+
+            if self.long_key == 0:
+                self.key = block.read(self.key_len).decode('ascii')
+            else:
+                self.key = Data(Address(self.long_key, address.path), self.key_len, True)
+
 if __name__ == "__main__":
     chrome_cache_path = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Cache/Cache_Data/")
 
@@ -107,3 +161,11 @@ if __name__ == "__main__":
         for key in range(index_cache_block.table_len): # for size of entry table
             raw = unpack('I', index.read(4)[0])
             if raw != 0:
+                entry = Entry(Address(raw, chrome_cache_path))
+                cache.append(entry)
+                while entry.next != 0:
+                    entry = Entry(Address(entry.next, chrome_cache_path))
+                    cache.append(entry)
+    
+    for entry in cache:
+        print(entry)
