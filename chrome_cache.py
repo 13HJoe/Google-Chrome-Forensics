@@ -1,5 +1,6 @@
 import os
 from struct import unpack
+import datetime
 
 
 
@@ -64,8 +65,33 @@ class Address():
             self.file_name = 'data_' + str(int(bin(addr)[10:18], 2))
             self.block_num = int(bin(addr)[18:], 2)
 
-        
 
+class Entry():
+    def __init__(self, address):
+        with open(os.path.join(address.path, address.file_name), 'rb') as block:
+            block.seek(8192 + address.block_num * address.entry_size)
+
+            self.hash = unpack("I",block.read(4))[0] # full hash of the key
+            self.next = unpack("I", block.read(4))[0] # next entry with the same hash
+            self.rankings_node = unpack("I",block.read(4))[0]
+            self.reuse_count = unpack("I",block.read(4))[0]
+            self.refetch_count = unpack("I", block.read(4))[0]
+            self.state = unpack("I",block.read(4))[0]
+            self.creationTime = datetime.datetime(1601,1,1) + datetime.timedelta(microseconds=unpack('Q', block.read(8))[0])
+            self.key_len = unpack('I',block.read(4))[0]
+            self.long_key = unpack('I',block.read(4))[0]
+            self.data_size = [unpack('I',block.read(4))[0] for _ in range(4)]
+            self.data = []
+            """
+            for i in range(4):
+                a = unpack('I', block.read(4))[0]
+                try:
+                    addr = Address(a, address.path)
+                    self.data.append(Data)
+                except:
+                    pass
+            """
+            
 if __name__ == "__main__":
     chrome_cache_path = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Cache/Cache_Data/")
 
@@ -81,4 +107,3 @@ if __name__ == "__main__":
         for key in range(index_cache_block.table_len): # for size of entry table
             raw = unpack('I', index.read(4)[0])
             if raw != 0:
-
