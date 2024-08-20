@@ -48,6 +48,8 @@ class Address():
     BLOCK_1024 = 3
     BLOCK_4096 = 4
 
+    type_sizes = [0, 36, 256, 1024, 4096]
+
     def __init__(self, addr, path):
         if addr == 0:
             raise Exception("Null Pointer")
@@ -62,7 +64,7 @@ class Address():
         elif self.block_type == Address.RANKING_BLOCK:
             self.file_name = 'data_'+str(int(bin(addr)[10:18],2))
         else:
-            self.entry_size = Address.type_sizes(self.block_type)
+            self.entry_size = Address.type_sizes[self.block_type]
             self.contiguous_block = str(int(bin(addr)[10:18], 2))
             self.file_name = 'data_' + str(int(bin(addr)[10:18], 2))
             self.block_num = int(bin(addr)[18:], 2)
@@ -159,7 +161,7 @@ if __name__ == "__main__":
         index.seek(92*4) # skip the metadata section
         cache = []
         for key in range(index_cache_block.table_len): # for size of entry table
-            raw = unpack('I', index.read(4)[0])
+            raw = unpack('I', index.read(4))[0]
             if raw != 0:
                 entry = Entry(Address(raw, chrome_cache_path))
                 cache.append(entry)
