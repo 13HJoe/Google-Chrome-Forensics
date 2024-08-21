@@ -170,4 +170,14 @@ if __name__ == "__main__":
                     cache.append(entry)
     
     for entry in cache:
-        print(entry)
+        for i, d in enumerate(entry.data):
+            if d is not entry.httpHeader:
+                t = 'unknown'
+                if entry.httpHeader is not None:
+                    t = entry.httpHeader.headers['content-type'].split(';')[0].strip()
+                    
+                name = hex(entry.hash) + '_' + str(i)
+                data_path = os.path.join('out', t, name)
+                os.makedirs(os.path.dirname(data_path), exist_ok=True)
+                with open(data_path, 'wb') as obj:
+                    obj.write(d.data)
