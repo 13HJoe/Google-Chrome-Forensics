@@ -3,6 +3,7 @@ from struct import unpack
 import datetime
 import copy
 import re
+import gzip
 
 
 
@@ -175,9 +176,22 @@ if __name__ == "__main__":
                 t = 'unknown'
                 if entry.httpHeader is not None:
                     t = entry.httpHeader.headers['content-type'].split(';')[0].strip()
-                    
+
                 name = hex(entry.hash) + '_' + str(i)
                 data_path = os.path.join('out', t, name)
                 os.makedirs(os.path.dirname(data_path), exist_ok=True)
                 with open(data_path, 'wb') as obj:
                     obj.write(d.data)
+            
+                try:
+                    if entry.httpHeader.headers.get('content-encoding') == 'gzip':
+                        try:
+                            unzipped = None
+                            with gzip.open(data_path) as g:
+                                unzipped = g.read()
+                            with open(data_path, 'rb') as data_f:
+                                data_f.write(unzipped)
+                        except IOError:
+                            pass
+                except:
+                    pass
