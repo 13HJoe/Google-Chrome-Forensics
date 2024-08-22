@@ -66,7 +66,7 @@ class Address():
             self.file_name = 'data_'+str(int(bin(addr)[10:18],2))
         else:
             self.entry_size = Address.type_sizes[self.block_type]
-            self.contiguous_block = str(int(bin(addr)[10:18], 2))
+            self.contiguous_block = int(bin(addr)[8:10], 2)
             self.file_name = 'data_' + str(int(bin(addr)[10:18], 2))
             self.block_num = int(bin(addr)[18:], 2)
 
@@ -102,7 +102,7 @@ class Data():
 
             self.data_type = Data.HTTP_HEADER
             self.headers = {}
-            for line in data.copy.split(b'\x00')[1:]:
+            for line in data_copy.split(b'\x00')[1:]:
                 strip = line.split(b':')
                 v = b':'.join(strip[1:])
                 v = v.decode(encoding='utf-8')
@@ -189,7 +189,7 @@ if __name__ == "__main__":
                             unzipped = None
                             with gzip.open(data_path) as g:
                                 unzipped = g.read()
-                            with open(data_path, 'rb') as data_f:
+                            with open(data_path, 'wb') as data_f:
                                 data_f.write(unzipped)
                         except IOError:
                             pass
