@@ -1,2 +1,4 @@
 test/
+build/out/
 out/
+src/out/
