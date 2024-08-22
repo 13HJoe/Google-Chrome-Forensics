@@ -195,3 +195,12 @@ if __name__ == "__main__":
                             pass
                 except:
                     pass
+        if entry.httpHeader is not None:
+            name = hex(entry.hash) + '.header'
+            t = entry.httpHeader.headers['content-type'].split(';')[0].strip()
+            header_path = os.path.join('out',t,name)
+            os.makedirs(os.path.dirname(header_path), exist_ok=True)
+            with open(header_path,'w') as header_f:
+                for key, value in entry.httpHeader.headers.items():
+                    header_f.write("{}: {}\n".format(key, value))
+
