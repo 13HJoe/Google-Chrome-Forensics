@@ -10,12 +10,31 @@ class Parse_History():
             self.db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/History')
             
     def exec_query(self, query):
-        connection = sqlite3.connect(self.db)
-        cursor = connection.cursor()
-        cursor.execute(query)
-        data = cursor.fetchall()
-        connection.close()
-        return data
+        try:
+            connection = sqlite3.connect(self.db)
+            cursor = connection.cursor()
+            cursor.execute(query)
+            data = cursor.fetchall()
+            connection.close()
+            return data
+        except:
+            return None
+
+    def get_db_info(self):
+        query = "SELECT * FROM sqlite_master WHERE type='table';"
+        tables = self.exec_query(query=query)
+        if tables:
+            for table in tables:
+                print(table,"\n","-"*60)
+        
+    def get_table_info(self, table_name):
+        query = "SELECT sql FROM sqlite_schema WHERE name='"+table_name+"';"
+        data = self.exec_query(quer=query)
+        data = str(data)
+        data = data.split(",")
+        for line in data:
+            print(line)
+
 
     def date_from_webkit(self, timestamp):
         # convert webkit_timestamp to readable format
@@ -46,8 +65,5 @@ class Parse_History():
     def run_class(self):
         self.navigation_history()
         self.download_history()
-
-parse_obj = Parse_History()
-parse_obj.run_class()
 
     

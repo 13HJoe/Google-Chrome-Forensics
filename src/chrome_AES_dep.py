@@ -11,6 +11,23 @@ class Enc_Data:
         if self.base_path == None:
             self.base_path = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/")
         self.master_key = self.get_master_key()
+    
+    def get_db_info(self, db_path):
+        query = "SELECT * FROM sqlite_master WHERE type='table';"
+        tables = self.exec_query(query=query, db_path=db_path)
+        if tables:
+            for table in tables:
+                print(table,"\n","-"*60)
+        
+    def get_table_info(self, table_name, db_path):
+        query = "SELECT sql FROM sqlite_schema WHERE name='"+table_name+"';"
+        data = self.exec_query(query=query, db_path=db_path)
+        data = str(data)
+        data = data.split(",")
+        for line in data:
+            print(line)
+
+
 
     def get_master_key(self):
         local_state_file_path = self.base_path+'Local State'
@@ -45,6 +62,8 @@ class Enc_Data:
             return decrypted_data
         except:
             return None
+        
+    
 
     def exec_query(self, query, db_path):
         try:
