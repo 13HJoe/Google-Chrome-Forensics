@@ -125,6 +125,7 @@ class Chrome_Forensics:
 
     def get_navigation_history(self):
         query = "SELECT * FROM urls ORDER BY last_visit_time DESC;"
+        query_oc_2 = "SELECT visits.visit_time, urls.url, urls.visit_count, urls.typed_count, urls.hidden FROM urls, visits WHERE urls.id = visits.url ORDER BY visits.visit_time DESC;"
         table_data = self.exec_query(query=query)
         for line in table_data:
             try:
@@ -143,6 +144,19 @@ class Chrome_Forensics:
             print(line+"\n")
             print("-"*200)
             print("\n")
+
+    def get_google_search_history(self):
+        query = "SELECT visits.visit_time, urls.url, keyword_search_terms.term FROM urls, visits, keyword_search_terms WHERE urls.id = keyword_search_terms.url_id AND urls.id = visits.url ORDER BY visits.vist_time DESC;"
+        table_data = self.exec_query(query=query)
+        for line in table_data:
+            try:
+                readable_date = self.date_from_webkit(int(line[0]))
+                print(readable_date, end="==>")
+                print(line[1:])
+            except:
+                pass
+
+
 
 
     def run_class(self):

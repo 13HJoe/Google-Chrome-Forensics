@@ -65,11 +65,17 @@ class Parse_History():
     def run_class(self):
         self.navigation_history()
         self.download_history()
-
+    
+    def get_google_search_history(self):
+        query = "SELECT visits.visit_time, urls.url, keyword_search_terms.term FROM keyword_search_terms, urls, visits WHERE urls.id = keyword_search_terms.url_id  AND urls.id = visits.url ORDER BY visits.visit_time DESC;"
+        data = self.exec_query(query=query)
+        for line in data:
+            try:
+                print(self.date_from_webkit(line[0]), end=" ==> ")
+                print(line[1:])
+            except:
+                pass
     
 obj = Parse_History()
-query = "SELECT visits.visit_time, urls.url, urls.visit_count, urls.typed_count, urls.hidden FROM urls, visits WHERE urls.id = visits.url ORDER BY visits.visit_time DESC;"
-data = obj.exec_query(query=query)
-for line in data:
-    print(obj.date_from_webkit(int(line[0])))
-    print(line[1:])
+#query = "SELECT visits.visit_time, urls.url, urls.visit_count, urls.typed_count, urls.hidden FROM urls, visits WHERE urls.id = visits.url ORDER BY visits.visit_time DESC;"
+obj.get_google_search_history()
