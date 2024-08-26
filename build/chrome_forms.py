@@ -6,37 +6,32 @@ import win32crypt
 from Crypto.Cipher import AES
 
 db = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Web Data")
-
-
-connection = sqlite3.connect(db)
-cursor = connection.cursor()
-
-
-
-cursor.execute("SELECT * FROM sqlite_master WHERE type='table';")
-tables  = cursor.fetchall()
-for table in tables:
-    print(table)
-    query = "SELECT * FROM "+table[1]
-    cursor.execute(query)
-    """
-    if table[1] == "token_service":
-        parse_token_service(cursor.fetchall())
-    else:
-    """
+        
+def exec_query(query):
     try:
-        print(cursor.fetchall())
+        connection = sqlite3.connect(db)
+        cursor = connection.cursor()
+        cursor.execute(query)
+        data = cursor.fetchall()
+        connection.close()
+        return data
     except:
-        print("[-] Failed to parse table -> ", table[1])
-        continue
+        return None
+
+query = "SELECT * FROM sqlite_master WHERE type = 'table'; "
+data = exec_query(query=query)
+for line in data:
+    table_name = line[1]
+    subquery = "SELECT * FROM "+table_name
+    print(line)
+    table_data = exec_query(query=subquery)
+    if table_data:
+        for line in table_data:
+            print(line)
+    
     print("-"*50)
 
 
-"""
-cursor.execute("SELECT sql from sqlite_schema where name='autofill';")
-print(cursor.fetchall())
-cursor.execute("SELECT * FROM autofill;")
-print(cursor.fetchall())
-cursor.execute("SELECT * FROM autofill_sync_metadata;")
-print(cursor.fetchall())
-"""
+
+
+
