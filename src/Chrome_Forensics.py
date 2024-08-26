@@ -4,12 +4,14 @@ import base64
 import win32crypt
 from Crypto.Cipher import AES
 import sqlite3
+import datetime
 
-class Enc_Data:
+class Chrome_Forensics:
     def __init__(self, base_path=None):
         self.base_path = base_path
         if self.base_path == None:
             self.base_path = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/")
+        self.history_db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/History')
         self.master_key = self.get_master_key()
     
     def get_db_info(self, db_path):
@@ -26,8 +28,6 @@ class Enc_Data:
         data = data.split(",")
         for line in data:
             print(line)
-
-
 
     def get_master_key(self):
         local_state_file_path = self.base_path+'Local State'
@@ -63,9 +63,9 @@ class Enc_Data:
         except:
             return None
         
-    
-
-    def exec_query(self, query, db_path):
+    def exec_query(self, query, db_path = None):
+        if not db_path:
+            db_path = self.history_db
         try:
             connection = sqlite3.connect(db_path)
             cursor = connection.cursor()
@@ -116,11 +116,41 @@ class Enc_Data:
                     title = key.title().replace('_',' ')
                     print(f"{title}:{val}")
                 print()
-        
+ 
+    def date_from_webkit(self, timestamp):
+        # convert webkit_timestamp to readable format
+        epoch_start = datetime.datetime(1601,1,1)
+        delta = datetime.timedelta(microseconds=int(timestamp))
+        return epoch_start + delta
+
+    def get_navigation_history(self):
+        query = "SELECT * FROM urls ORDER BY last_visit_time DESC;"
+        table_data = self.exec_query(query=query)
+        for line in table_data:
+            try:
+                webkit_date = int(line[5])
+                readable_date = self.date_from_webkit(webkit_date)
+                print(line,"\n","-"*50)
+            except:
+                pass
+    
+    def get_download_history(self):
+        query = "SELECT * FROM downloads;"
+        table_data = self.exec_query(query=query)
+        table_data = str(table_data)
+        table_data = table_data.split(')')
+        for line in table_data:
+            print(line+"\n")
+            print("-"*200)
+            print("\n")
+
+
     def run_class(self):
         self.get_chrome_passwords()
         self.get_chrome_cookies()
+        self.get_download_history()
+        self.get_navigation_history()
 
 
-enc_data_obj = Enc_Data()
+enc_data_obj = Chrome_Forensics()
 enc_data_obj.run_class()
