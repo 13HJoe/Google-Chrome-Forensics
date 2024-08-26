@@ -66,6 +66,7 @@ class Chrome_Forensics:
     def exec_query(self, query, db_path = None):
         if not db_path:
             db_path = self.history_db
+
         try:
             connection = sqlite3.connect(db_path)
             cursor = connection.cursor()
@@ -146,7 +147,7 @@ class Chrome_Forensics:
             print("\n")
 
     def get_google_search_history(self):
-        query = "SELECT visits.visit_time, urls.url, keyword_search_terms.term FROM urls, visits, keyword_search_terms WHERE urls.id = keyword_search_terms.url_id AND urls.id = visits.url ORDER BY visits.vist_time DESC;"
+        query = "SELECT visits.visit_time, urls.url, keyword_search_terms.term FROM urls, visits, keyword_search_terms WHERE urls.id = keyword_search_terms.url_id AND urls.id = visits.url ORDER BY visits.visit_time DESC;"
         table_data = self.exec_query(query=query)
         for line in table_data:
             try:
@@ -164,6 +165,7 @@ class Chrome_Forensics:
         self.get_chrome_cookies()
         self.get_download_history()
         self.get_navigation_history()
+        self.get_google_search_history()
 
 
 enc_data_obj = Chrome_Forensics()
