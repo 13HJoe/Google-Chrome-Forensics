@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import datetime
-
+import csv
 
 class Parse_History():
     def __init__(self, db=None):
@@ -69,12 +69,32 @@ class Parse_History():
     def get_google_search_history(self):
         query = "SELECT visits.visit_time, urls.url, keyword_search_terms.term FROM keyword_search_terms, urls, visits WHERE urls.id = keyword_search_terms.url_id  AND urls.id = visits.url ORDER BY visits.visit_time DESC;"
         data = self.exec_query(query=query)
+        new_data = [["VISIT TIME","URL","KEYWORD SEARCH TERM"]]
+        for line in data:
+            new_line = [self.date_from_webkit(line[0])]
+            for obj in line[1:]:
+                new_line.append(obj)
+            new_data.append(new_line)
+        self.write_to_csv("History",new_data)
+        '''
         for line in data:
             try:
                 print(self.date_from_webkit(line[0]), end=" ==> ")
                 print(line[1:])
             except:
                 pass
+        '''
+    
+    def write_to_csv(self, table_name, table_data):
+        table_name = table_name+".csv"
+        with open(table_name, 'w', newline='') as csv_obj:
+            csv_writer = csv.writer(csv_obj, delimiter=',')
+            for line in table_data:
+                try:
+                    csv_writer.writerow(line)
+                except:
+                    pass
+
     
 obj = Parse_History()
 #query = "SELECT visits.visit_time, urls.url, urls.visit_count, urls.typed_count, urls.hidden FROM urls, visits WHERE urls.id = visits.url ORDER BY visits.visit_time DESC;"

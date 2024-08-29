@@ -4,6 +4,7 @@ import base64
 import win32crypt
 from Crypto.Cipher import AES
 import sqlite3
+import csv
 import datetime
 
 class Chrome_Forensics:
@@ -157,9 +158,20 @@ class Chrome_Forensics:
             except:
                 pass
 
+    def get_bookmarks(self):
+        return None
 
-
-
+    def write_to_csv(self, table_name, table_data):
+        table_name = table_name + ".csv"
+        with open(table_name, 'w', newline='') as csv_obj:
+            csv_writer = csv.write(csv_obj, delimiter=',')
+            for line in table_data:
+                try:
+                    csv_writer.writerow(line)
+                except:
+                    pass
+        return None
+    
     def run_class(self):
         self.get_chrome_passwords()
         self.get_chrome_cookies()
