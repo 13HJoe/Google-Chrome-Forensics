@@ -9,10 +9,13 @@ def date_from_webkit(timestamp):
     delta = datetime.timedelta(microseconds=int(timestamp))
     return epoch_start + delta
 
-def recurse_bookmarks(data):
-    for obj in data:
-        if obj['children']:
-            recurse_bookmarks()
+def recurse_children(child):
+    for object in child:
+        if 'children' in object.keys():
+            recurse_children(object['children'])
+        else:
+            print(object)
+    return None
 
 
 file = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Bookmarks")
@@ -21,10 +24,8 @@ data = fobj.read()
 data = data.decode()
 data = json.loads(data)
 for key in data['roots'].keys():
-    if data['roots'][key]['children']:
-        recurse_bookmarks(data['roots'][key]['children'])
-        for obj in data['roots'][key]['children']:
-            print(obj)
-            print("__"*100)
-        #print(data['roots'][key])
-        #print("__"*100)
+    bookmark_type = data['roots'][key]['name']
+    date_added = data['roots'][key]['date_added']
+    print(bookmark_type," ",date_from_webkit(date_added))
+    #print(data['roots'][key],'\n\n\n')
+    recurse_children(data['roots'][key]['children'])
