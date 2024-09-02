@@ -158,7 +158,36 @@ class Chrome_Forensics:
             except:
                 pass
 
+    def recurse_bookmarks_children(self, child):
+        for object in child:
+            if 'children' in object.keys():
+                print(object['name'])
+                self.recurse_children(object['children'])
+            else:
+                data = (
+                    'date_added -> ' + str(self.date_from_webkit(object['date_added']))
+                    +' | date_last_used -> ' + str(self.date_from_webkit(object['date_last_used'])
+                    +' | name -> ' + object['name']
+                    +' | url -> ' + object['url'])
+                )
+
     def get_bookmarks(self):
+
+
+        file = self.base_path + 'Default/Bookmarks'
+        fobj = open(file, 'rb')
+        data = fobj.read()
+        data = data.decode()
+        data = json.loads(data)
+        fobj.close()
+        for key in data['roots'].keys():
+            bookmark_type = data['roots'][key]['name']
+            date_added = data['roots'][key]['date_added']
+            print(bookmark_type," ",self.date_from_webkit(date_added),"\n")
+            if len(data['roots'][key]['children']) == 0:
+                print("No Bookmarks")
+                continue
+            
         return None
 
     def write_to_csv(self, table_name, table_data):

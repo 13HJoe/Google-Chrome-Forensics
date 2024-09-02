@@ -12,9 +12,15 @@ def date_from_webkit(timestamp):
 def recurse_children(child):
     for object in child:
         if 'children' in object.keys():
+            print(object['name'])
             recurse_children(object['children'])
         else:
-            print(object)
+            data = ('date_added -> ' + str(date_from_webkit(object['date_added']))
+                    +' | date_last_used -> ' + str(date_from_webkit(object['date_added']))
+                    +' | name -> '+ object['name']
+                    +' | url -> '+ object['url'])
+            print(data)
+    print()
     return None
 
 
@@ -26,6 +32,9 @@ data = json.loads(data)
 for key in data['roots'].keys():
     bookmark_type = data['roots'][key]['name']
     date_added = data['roots'][key]['date_added']
-    print(bookmark_type," ",date_from_webkit(date_added))
+    print(bookmark_type," ",date_from_webkit(date_added),"\n")
     #print(data['roots'][key],'\n\n\n')
+    if len(data['roots'][key]['children']) == 0:
+        print('No Bookmarks')
+        continue
     recurse_children(data['roots'][key]['children'])
