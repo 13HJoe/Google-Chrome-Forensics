@@ -162,17 +162,18 @@ class Chrome_Forensics:
         for object in child:
             if 'children' in object.keys():
                 print(object['name'])
-                self.recurse_children(object['children'])
+                self.recurse_bookmarks_children(object['children'])
             else:
                 data = (
                     'date_added -> ' + str(self.date_from_webkit(object['date_added']))
-                    +' | date_last_used -> ' + str(self.date_from_webkit(object['date_last_used'])
+                    +' | date_last_used -> ' + str(self.date_from_webkit(object['date_last_used']))
                     +' | name -> ' + object['name']
                     +' | url -> ' + object['url'])
-                )
-
+                print(data)
+        print()
+        return None
+    
     def get_bookmarks(self):
-
 
         file = self.base_path + 'Default/Bookmarks'
         fobj = open(file, 'rb')
@@ -187,7 +188,7 @@ class Chrome_Forensics:
             if len(data['roots'][key]['children']) == 0:
                 print("No Bookmarks")
                 continue
-            
+            self.recurse_bookmarks_children(data['roots'][key]['children'])
         return None
 
     def write_to_csv(self, table_name, table_data):
@@ -210,4 +211,5 @@ class Chrome_Forensics:
 
 
 enc_data_obj = Chrome_Forensics()
-enc_data_obj.run_class()
+enc_data_obj.get_bookmarks()
+#enc_data_obj.run_class()
