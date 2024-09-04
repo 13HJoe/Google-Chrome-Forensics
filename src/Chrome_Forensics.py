@@ -24,28 +24,31 @@ class Block:
         self.process_metadata()
 
     def process_metadata(self):
-        with open(self.filename, 'rb') as header:
+        header = open(self.filename, 'rb')
 
-            # disk_cache/blockfile/disk_format_base.h -> line 48
-            # disk_cache/blockfile/disk_format.h -> line 80
-            # unpack unsigned integer "I" -> uint32_t
-            m = unpack('I', header.read(4))[0]
-            if m == Block.index_MAGIC:
-                header.seek(2, 1) # ?
-                # disk_cache/blockfile/disk_format.h
-                # line 81 -> line 87
-                self.block_type = Block.INDEX
-                self.version = unpack('I', header.read(4))[0]
-                self.num_entries = unpack('I', header.read(4))[0]
-                self.total_bytes = unpack('I', header.read(4))[0]
-                # last external file created
-                self.last_file = 'f_{:06x}'.format(unpack('I', header.read(4))[0])
-                header.seek(8, 1)
-                # no. of entries -> atleast disk_cache::kIndexTablesize (65536)
-                # actual size of the table controlled by -> table_len
-                self.table_len = unpack('I', header.read(4))[0]
-            else:
-                raise Exception("Not a valid index")
+        # disk_cache/blockfile/disk_format_base.h -> line 48
+        # disk_cache/blockfile/disk_format.h -> line 80
+        # unpack unsigned integer "I" -> uint32_t
+        m = unpack('I', header.read(4))[0]
+        if m == Block.index_MAGIC:
+            # skip b'\x00\x00' bytes
+            header.seek(2, 1) 
+            # disk_cache/blockfile/disk_format.h
+            # line 81 -> line 87
+            self.block_type = Block.INDEX
+            self.version = unpack('h', header.read(2))[0]
+            self.num_entries = unpack('i', header.read(4))[0] # only works in versions 2.x
+            self.total_bytes = unpack('i', header.read(4))[0]
+            # last external file created
+            self.last_file = 'f_{:06x}'.format(unpack('I', header.read(4))[0])
+            header.seek(8, 1)
+            # no. of entries -> atleast disk_cache::kIndexTablesize (65536)
+            # actual size of the table controlled by -> table_len
+            self.table_len = unpack('i', header.read(4))[0]
+        else:
+            raise Exception("Not a valid index")
+        #------------#
+        header.close()
 
 
 class Chrome_Forensics:
@@ -254,8 +257,10 @@ class Chrome_Forensics:
         # create an object of Block to parse
         # the header of the index file
         index_file_obj = Block(index_file_path)
-        print(index_file_obj.total_bytes)
         
+        
+        print(index_file_obj.version," ",index_file_obj.num_entries," ", index_file_obj.total_bytes)
+        print(index_file_obj.last_file," ",index_file_obj.table_len)
         
 obj = Chrome_Forensics()
 obj.cache_parse()
