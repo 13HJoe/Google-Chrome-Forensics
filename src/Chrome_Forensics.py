@@ -7,6 +7,47 @@ import sqlite3
 import csv
 import datetime
 
+from struct import unpack # upack from buffer -> returns tuple
+
+class Block:
+    # /net/disk_cache/blockfile/disk_format.h
+    # line 58
+    index_MAGIC = 0xC103CAC3
+    INDEX = 0
+    # /net/disk_cache/blockfile/disk_format_base.h
+    # line 31
+    block_MAGIC = 0xC104CAC3
+    BLOCK = 1
+
+    def __init__(self, filename):
+        self.filename = filename
+        self.process_metadata()
+
+    def process_metadata(self):
+        with open(self.filename, 'rb') as header:
+
+            # disk_cache/blockfile/disk_format_base.h -> line 48
+            # disk_cache/blockfile/disk_format.h -> line 80
+            # unpack unsigned integer "I" -> uint32_t
+            m = unpack('I', header.read(4))[0]
+            if m == Block.index_MAGIC:
+                header.seek(2, 1) # ?
+                # disk_cache/blockfile/disk_format.h
+                # line 81 -> line 87
+                self.block_type = Block.INDEX
+                self.version = unpack('I', header.read(4))[0]
+                self.num_entries = unpack('I', header.read(4))[0]
+                self.total_bytes = unpack('I', header.read(4))[0]
+                # last external file created
+                self.last_file = 'f_{:06x}'.format(unpack('I', header.read(4))[0])
+                header.seek(8, 1)
+                # no. of entries -> atleast disk_cache::kIndexTablesize (65536)
+                # actual size of the table controlled by -> table_len
+                self.table_len = unpack('I', header.read(4))[0]
+            else:
+                raise Exception("Not a valid index")
+
+
 class Chrome_Forensics:
     def __init__(self, base_path=None):
         self.base_path = base_path
@@ -202,14 +243,26 @@ class Chrome_Forensics:
                     pass
         return None
     
-    def run_class(self):
-        self.get_chrome_passwords()
-        self.get_chrome_cookies()
-        self.get_download_history()
-        self.get_navigation_history()
-        self.get_google_search_history()
+
+    def cache_parse(self):
+
+        cache_path = self.base_path + "Default/Cache/Cache_Data/"
+
+        # index file -> main hash table
+        # used to locate entries on the cache
+        index_file_path = os.path.join(cache_path, "index")
+        # create an object of Block to parse
+        # the header of the index file
+        index_file_obj = Block(index_file_path)
+        print(index_file_obj.total_bytes)
+        
+        
+obj = Chrome_Forensics()
+obj.cache_parse()
 
 
-enc_data_obj = Chrome_Forensics()
-enc_data_obj.get_bookmarks()
-#enc_data_obj.run_class()
+
+
+
+
+
