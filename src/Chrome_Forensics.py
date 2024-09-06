@@ -80,6 +80,13 @@ class Block:
         header.close()
 
 class Address:
+    # cache address is simply a 32-bit number that describes exactly where the data is actually located
+    # note:
+    #    -> cache entry will have an address
+    #    -> the HTTP headers will have another address
+    #    -> the actual request data will have a different address
+    #    -> the entry name (key) may have another address 
+    #    -> Auxiliary information for the entry (such as the rankings info for the eviction algorithm) will have another address
     # disk_cache/blockfile/addr.h
     # line 20 -> 29
     SEPERATE_FILE = 0
@@ -124,11 +131,67 @@ class Address:
             self.block_num = int(bin(self.addr)[18:], 2)
         return None
 
-
 class Entry:
     def __init__(self, address):
         with open(os.path.join(address.path, address.filename), 'rb') as block:
+            # skip header -> 8KB
             block.seek(8192 + address)
+
+            # disk_cache/blockfile/disk_format.h 
+
+            # line 109 -> line 118
+            # full hash of the key
+            self.hash = unpack("I", block.read(4))[0]
+            # next entry with the same hash/bucket
+            self.next = unpack("I", block.read(4))[0]
+            # rankings node for this entry
+            self.rankings_node = unpack("I", block.read(4))[0]
+            # how often this entry is used
+            self.reuse_count = unpack("I", block.read(4))[0]
+            # how often is  this fetched from the net
+            self.refetch_count = unpack("I", block.read(4))[0]
+            # current state
+            """
+            // Possible states for a given entry.
+            ENTRY_NORMAL = 0,
+            ENTRY_EVICTED,    // The entry was recently evicted from the cache.
+            ENTRY_DOOMED      // The entry was doomed.
+            """
+            self.state = unpack("I", block.read(4))[0]
+
+            self.creation_time = unpack("Q",block.read(8))[0]
+            self.creation_time = datetime.datetime(1601, 1, 1) + datetime.timedelta(microseconds=self.creation_time)
+
+            self.key_len = unpack("I", block.read(4))[0]
+            # optional address of long key
+            self.long_key = unpack("I", block.read(4))[0]
+            # store up to 4 data streams for each entry
+            self.data_size[4] = [unpack("I", block.read(4))[0] for _ in range(4)]
+            self.data = []
+
+            for i in range(4):
+                entry_addr = unpack("I", block.read(4))[0]
+                try:
+                    addr = Address(entry_addr, address.path)
+                    self.data.append(None)
+                except:
+                    pass
+            
+            """
+            flags
+            PARENT_ENTRY = 1,         // This entry has children (sparse) entries.
+            CHILD_ENTRY = 1 << 1      // Child entry that stores sparse data.
+            """
+            self.flags = unpack("I", block.read(4))[0]
+            # skip paddding and self_hash - line 121 & 122
+            block.seek(5*4, 1)
+
+            if self.long_key == 0:
+                self.key = block.read(self.key_len).decode('ascii')
+            else:
+                self.key = None
+
+
 
 
 class Chrome_Forensics:
@@ -346,9 +409,9 @@ class Chrome_Forensics:
             for key in range(index_cache_obj.table_len):
                 raw = unpack('I', index.read(4))[0]
                 if raw != 0:
-                    addr = Address(raw, cache_path)
-                    break
-                    
+                    entry = Entry(Address(raw, cache_path))
+                    cache.append(entry) 
+            
 
 obj = Chrome_Forensics()
 obj.cache_parse()
