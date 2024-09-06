@@ -32,7 +32,8 @@ class Block:
         m = unpack('I', header.read(4))[0]
         if m == Block.index_MAGIC:
             # skip b'\x00\x00' bytes
-            header.seek(2, 1) 
+            header.seek(2, 1)
+        
             # disk_cache/blockfile/disk_format.h
             # line 81 -> line 87
             self.block_type = Block.INDEX
@@ -47,8 +48,87 @@ class Block:
             self.table_len = unpack('i', header.read(4))[0]
         else:
             raise Exception("Not a valid index")
-        #------------#
+        """
+        elif m == Block.block_MAGIC:
+            header.seek(2, 1)
+            # A block-file is the file used to store information in blocks (could be
+            # EntryStore blocks, RankingsNode blocks or user-data blocks).
+            # We store entries that can expand for up to 4 consecutive blocks, and keep
+            # counters of the number of blocks available for each type of entry. For
+            # instance, an entry of 3 blocks is an entry of type 3. We also keep track of
+            # where did we find the last entry of that type (to avoid searching the bitmap
+            # from the beginning every time).
+            # disk_cache/blockfile/disk_format_base.h 
+            # line 47 -> 60
+            self.block_type = Block.BLOCK
+            self.version = unpack('h', header.read(2))[0]
+            # index of this file
+            self.this_file = unpack('h', header.read(2))[0]
+            # index of next file, when this file is full
+            self.next_file = unpack('h', header.read(2))[0]
+            # size of the blocks of this file
+            self.entry_size = unpack('I', header.read(4))[0]
+            # number of stored entries
+            self.num_entries = unpack('I', header.read(4))[0]
+            # current maximum no. of entries 
+            self.max_entries = unpack('I', header.read(4))[0]
+            # counters of empty entries for each type
+            self.empty = [unpack('I', header.read(4))[0] for _ in range(4)]
+            # last used position for each entry type
+            self.hints = [unpack('I', header.read(4))[0] for _ in range(4)]
+        """
         header.close()
+
+class Address:
+    # disk_cache/blockfile/addr.h
+    # line 20 -> 29
+    SEPERATE_FILE = 0
+    RANKING_BLOCK = 1
+    BLOCK_256 = 2
+    BLOCK_1024 = 3
+    BLOCK_4096 = 4
+
+    sizes = [0, 36, 256, 1024, 4096]
+
+    def __init__(self, addr, path):
+        if addr == 0:
+            raise Exception("Null Pointer")
+        
+        self.addr = addr
+        self.path = path
+        self.build_name()
+    
+    
+    def build_name(self):
+        self.block_type = int(bin(self.addr)[3:6], 2)
+        print(bin(self.addr)[2:])
+        print(len(bin(self.addr)[2:]))
+
+        # ref :- https://github.com/libyal/dtformats/blob/main/documentation/Chrome%20Cache%20file%20format.asciidoc#2-cache-address
+        if self.block_type == Address.SEPERATE_FILE:
+            # The value represents the value of # in f_######
+            # 0ffset-0.0 28 bits
+            self.file_name = 'f_{:06x}'.format(int(bin(self.addr)[6:], 2))
+        elif self.block_type == Address.RANKING_BLOCK:
+            self.file_name = 'data_'+str(int(bin(self.addr)[10:18], 2))
+        else:
+            self.entry_size = Address.sizes[self.block_type]
+            # The number of contiguous blocks where 0 represents 1 block and 3 represents 4 blocks.
+            # Offset-3.0 2 bits
+            self.contiguous_block = int(bin(self.addr)[8:10], 2)
+            # The value represents the value of # in data_#
+            # Offset-2.0 8 bits
+            self.file_name = 'data_' + str(int(bin(self.addr)[10:18], 2))
+            # Block number
+            # Offset-0.0 16 bits 
+            self.block_num = int(bin(self.addr)[18:], 2)
+        return None
+
+
+class Entry:
+    def __init__(self, address):
+        with open(os.path.join(address.path, address.filename), 'rb') as block:
+            block.seek(8192 + address)
 
 
 class Chrome_Forensics:
@@ -256,12 +336,20 @@ class Chrome_Forensics:
         index_file_path = os.path.join(cache_path, "index")
         # create an object of Block to parse
         # the header of the index file
-        index_file_obj = Block(index_file_path)
+        index_cache_obj = Block(index_file_path)        
+        if index_cache_obj.block_type != Block.INDEX:
+            raise Exception("Not a valid [index] file")
         
-        
-        print(index_file_obj.version," ",index_file_obj.num_entries," ", index_file_obj.total_bytes)
-        print(index_file_obj.last_file," ",index_file_obj.table_len)
-        
+        with open(index_file_path, 'rb') as index:
+            index.seek(92*4)
+            cache = []
+            for key in range(index_cache_obj.table_len):
+                raw = unpack('I', index.read(4))[0]
+                if raw != 0:
+                    addr = Address(raw, cache_path)
+                    break
+                    
+
 obj = Chrome_Forensics()
 obj.cache_parse()
 
