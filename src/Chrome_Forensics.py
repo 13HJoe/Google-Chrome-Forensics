@@ -131,6 +131,8 @@ class Address:
             self.block_num = int(bin(self.addr)[18:], 2)
         return None
 
+
+
 class Entry:
     def __init__(self, address):
         with open(os.path.join(address.path, address.filename), 'rb') as block:
@@ -170,9 +172,9 @@ class Entry:
             self.data = []
 
             for i in range(4):
-                entry_addr = unpack("I", block.read(4))[0]
+                data_raw_addr = unpack("I", block.read(4))[0]
                 try:
-                    addr = Address(entry_addr, address.path)
+                    data_addr = Address(data_raw_addr, address.path)
                     self.data.append(None)
                 except:
                     pass
