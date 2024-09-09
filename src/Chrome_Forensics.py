@@ -203,7 +203,9 @@ class Chrome_Forensics:
             self.base_path = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/")
         self.history_db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/History')
         self.master_key = self.get_master_key()
-    
+    # 
+    # 
+    # UTILITY - troubleshoot
     def get_db_info(self, db_path):
         query = "SELECT * FROM sqlite_master WHERE type='table';"
         tables = self.exec_query(query=query, db_path=db_path)
@@ -253,20 +255,32 @@ class Chrome_Forensics:
         except:
             return None
         
-    def exec_query(self, query, db_path = None):
+    def exec_query(self, query, db_path = None, list_mode=False):
         if not db_path:
             db_path = self.history_db
-
         try:
             connection = sqlite3.connect(db_path)
             cursor = connection.cursor()
             cursor.execute(query)
-            data = cursor.fetchall()
+            if list_mode:
+                data = []
+                for line in cursor.fetchall():
+                    data.append(line)
+            else:
+                data = cursor.fetchall()
             connection.close()
             return data
         except:
             return "ERROR"
         
+    def date_from_webkit(self, timestamp):
+        # convert webkit_timestamp to readable format
+        epoch_start = datetime.datetime(1601,1,1)
+        delta = datetime.timedelta(microseconds=int(timestamp))
+        return epoch_start + delta
+    #
+    #
+    # Encrypted Data
     def get_chrome_passwords(self):
         db_path = self.base_path + 'Default/Login Data'
         query = "SELECT action_url, origin_url, username_value, password_value FROM logins;"
@@ -308,12 +322,21 @@ class Chrome_Forensics:
                     print(f"{title}:{val}")
                 print()
  
-    def date_from_webkit(self, timestamp):
-        # convert webkit_timestamp to readable format
-        epoch_start = datetime.datetime(1601,1,1)
-        delta = datetime.timedelta(microseconds=int(timestamp))
-        return epoch_start + delta
+    def get_credit_card(self):
+        db_path = self.base_path + "Default/Web Data"
+        query = "SELECT * FROM credit_cards;"
+        data = self.exec_query(query=query, list_mode=True, db_path=db_path)
+        for line in data:
+            encrypted_card_number_blob = line[4]
+            card_no = self.decrypt_data(encrypted_card_number_blob)
+            name = line[1]
+            expiry_date = str(line[2])+"/"+str(line[3])
 
+            print(f"{card_no=}, {name=}, {expiry_date=}")
+
+    # 
+    # 
+    # Plaintext 
     def get_navigation_history(self):
         query = "SELECT * FROM urls ORDER BY last_visit_time DESC;"
         query_oc_2 = "SELECT visits.visit_time, urls.url, urls.visit_count, urls.typed_count, urls.hidden FROM urls, visits WHERE urls.id = visits.url ORDER BY visits.visit_time DESC;"
@@ -416,7 +439,7 @@ class Chrome_Forensics:
             
 
 obj = Chrome_Forensics()
-obj.cache_parse()
+obj.get_credit_card()
 
 
 
