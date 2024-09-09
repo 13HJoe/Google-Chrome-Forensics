@@ -13,10 +13,11 @@ data = data.split(",")
 for line in data:
     print(line)
 
+""""
 with open("../test/chrome_download_history.txt",'w') as fobj:
     cursor.execute("SELECT * FROM downloads;")
     for line in cursor.fetchall():
         fobj.write(str(line))
         fobj.write("\n")
-
+"""
 connection.close()
