@@ -203,9 +203,9 @@ class Chrome_Forensics:
             self.base_path = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/")
         self.history_db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/History')
         self.master_key = self.get_master_key()
+    #-------------------------------------------------------------------------------------------------------------------------#
     # 
-    # 
-    # UTILITY - troubleshoot
+    # [[Utility]]
     def get_db_info(self, db_path):
         query = "SELECT * FROM sqlite_master WHERE type='table';"
         tables = self.exec_query(query=query, db_path=db_path)
@@ -255,7 +255,7 @@ class Chrome_Forensics:
         except:
             return None
         
-    def exec_query(self, query, db_path = None, list_mode=False):
+    def exec_query(self, query, db_path = None, list_mode = False):
         if not db_path:
             db_path = self.history_db
         try:
@@ -278,9 +278,9 @@ class Chrome_Forensics:
         epoch_start = datetime.datetime(1601,1,1)
         delta = datetime.timedelta(microseconds=int(timestamp))
         return epoch_start + delta
+    #----------------------------------------------------------------------------------------------------------------------------#
     #
-    #
-    # Encrypted Data
+    # [[Encrypted]]
     def get_chrome_passwords(self):
         db_path = self.base_path + 'Default/Login Data'
         query = "SELECT action_url, origin_url, username_value, password_value FROM logins;"
@@ -322,7 +322,7 @@ class Chrome_Forensics:
                     print(f"{title}:{val}")
                 print()
  
-    def get_credit_card(self):
+    def get_credit_card_info(self):
         db_path = self.base_path + "Default/Web Data"
         query = "SELECT * FROM credit_cards;"
         data = self.exec_query(query=query, list_mode=True, db_path=db_path)
@@ -333,10 +333,9 @@ class Chrome_Forensics:
             expiry_date = str(line[2])+"/"+str(line[3])
 
             print(f"{card_no=}, {name=}, {expiry_date=}")
-
+    #-----------------------------------------------------------------------------------------------------------------------------#
     # 
-    # 
-    # Plaintext 
+    # [[Plaintext]] 
     def get_navigation_history(self):
         query = "SELECT * FROM urls ORDER BY last_visit_time DESC;"
         query_oc_2 = "SELECT visits.visit_time, urls.url, urls.visit_count, urls.typed_count, urls.hidden FROM urls, visits WHERE urls.id = visits.url ORDER BY visits.visit_time DESC;"
@@ -386,7 +385,6 @@ class Chrome_Forensics:
         return None
     
     def get_bookmarks(self):
-
         file = self.base_path + 'Default/Bookmarks'
         fobj = open(file, 'rb')
         data = fobj.read()
@@ -402,19 +400,36 @@ class Chrome_Forensics:
                 continue
             self.recurse_bookmarks_children(data['roots'][key]['children'])
         return None
-
-    def write_to_csv(self, table_name, table_data):
-        table_name = table_name + ".csv"
-        with open(table_name, 'w', newline='') as csv_obj:
-            csv_writer = csv.write(csv_obj, delimiter=',')
-            for line in table_data:
-                try:
-                    csv_writer.writerow(line)
-                except:
-                    pass
-        return None
     
+    def get_autofill_address_info(self):
+        db_path = self.base_path + "Default/Web Data"
+        query = "SELECT * FROM contact_info"
+        table_data = self.exec_query(db_path=db_path, query=query, list_mode=True)
+        for line in table_data:
+            guid = str(line[0])
+            query = "SELECT value FROM contact_info_type_tokens WHERE guid='"+guid+"';"
+            autofill = self.exec_query(db_path=db_path, query=query, list_mode=False)
+            name = autofill[3]
+            email = autofill[4]
+            phone = autofill[5]
+            town_city = autofill[7]
+            state = autofill[8]
+            pin = autofill[9]
+            country_region = autofill[10]
+            organisation = autofill[12]
+            street_address = autofill[13]
 
+    def get_top_sites(self):
+        db_path = self.base_path + "Default/Top Sites"
+        query = "SELECT * FROM top_sites ORDER BY url_rank ASC;"
+        table_data = self.exec_query(db_path=db_path, query=query, list_mode=True)
+        for row in table_data:
+            url = row[0]
+            title = row[2]
+            print(f"{url=}"+(" "*(35-len(url))+f"|  {title=}"))
+    #-----------------------------------------------------------------------------------------------------------------------------#
+    # 
+    # [[Cache]]
     def cache_parse(self):
 
         cache_path = self.base_path + "Default/Cache/Cache_Data/"
@@ -439,9 +454,7 @@ class Chrome_Forensics:
             
 
 obj = Chrome_Forensics()
-obj.get_credit_card()
-
-
+obj.get_top_sites()
 
 
 

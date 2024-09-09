@@ -7,8 +7,8 @@ from Crypto.Cipher import AES
 
 db_top_sites = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Top Sites")
 
-#db = db_top_sites
-db = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Web Data")
+db = db_top_sites
+#db = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Web Data")
         
 def exec_query(query):
     try:
@@ -20,7 +20,6 @@ def exec_query(query):
         return data
     except:
         return None
-
 
 query = "SELECT * FROM sqlite_master WHERE type = 'table'; "
 data = exec_query(query=query)
@@ -34,8 +33,10 @@ for line in data:
             print(line)
     print("-"*50)
 
+data = exec_query("SELECT * FROM top_sites ORDER BY url_rank ASC;")
+for line in data:
+    print(type(line),line)
 '''
-
 query = "SELECT * FROM contact_info"
 connection = sqlite3.connect(db)
 cursor = connection.cursor()
@@ -45,7 +46,6 @@ for line in cursor.fetchall():
     response.append(line)
 for line in response:
     guid = str(line[0])
-    print(guid)
     #date_modified = date_from_webkit(line[2])
     query = "SELECT value FROM contact_info_type_tokens WHERE guid='"+guid+"';"
     cursor.execute(query)
@@ -59,8 +59,8 @@ for line in response:
     country_region = data[11]
     org = data[12]
     street_addr = data[13]
+    print(guid)
     print(f"{name=}, {email=}")
-'''
 
 
 def get_chrome_pass_master_key():
@@ -92,6 +92,4 @@ for line in cursor.fetchall():
 connection.close()
 
 
-
-
-
+'''
