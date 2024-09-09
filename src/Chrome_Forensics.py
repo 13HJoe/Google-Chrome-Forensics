@@ -349,14 +349,19 @@ class Chrome_Forensics:
                 pass
     
     def get_download_history(self):
-        query = "SELECT * FROM downloads;"
-        table_data = self.exec_query(query=query)
-        table_data = str(table_data)
-        table_data = table_data.split(')')
+        query = "SELECT * FROM downloads ORDER BY end_time;"
+        table_data = self.exec_query(query=query, list_mode=True)
         for line in table_data:
-            print(line+"\n")
-            print("-"*200)
-            print("\n")
+            path = line[1]
+            timestamp = self.date_from_webkit(int(line[4]))
+            timestamp = str(timestamp.date())+" "+str(timestamp.time())
+
+            size = line[5]
+            tab_url = line[19]
+            mime_type = line[25]
+            original_mime_type = line[26]
+            print(f"{path=},{timestamp=},{size=},{tab_url=},{mime_type=},{original_mime_type=},")
+
 
     def get_google_search_history(self):
         query = "SELECT visits.visit_time, urls.url, keyword_search_terms.term FROM urls, visits, keyword_search_terms WHERE urls.id = keyword_search_terms.url_id AND urls.id = visits.url ORDER BY visits.visit_time DESC;"
@@ -379,13 +384,13 @@ class Chrome_Forensics:
                 self.recurse_bookmarks_children(object['children'],folder=parent)
             else:
                 ret_data = {
-                    "parent-path":str(folder),
+                    "parent-folder-path":str(folder) if folder else "Orphan",
                     "date_added":str(self.date_from_webkit(object['date_added'])),
                     "date_last_used":str(self.date_from_webkit(object['date_last_used'])),
                     "name":object['name'],
                     "url":object['url']
                 }
-                print(ret_data)
+                self.all_bookmarks.append(ret_data)
         return None
     
     def get_bookmarks(self):
@@ -395,7 +400,7 @@ class Chrome_Forensics:
         data = data.decode()
         data = json.loads(data)
         fobj.close()
-        all_bookmarks = [] # list of dict objects ( dict for each bookmark)
+        self.all_bookmarks = [] # list of dict objects ( dict for each bookmark)
         for key in data['roots'].keys():
             bookmark_type = data['roots'][key]['name']
             date_added = data['roots'][key]['date_added']
@@ -403,9 +408,9 @@ class Chrome_Forensics:
             if len(data['roots'][key]['children']) == 0:
                 print("No Bookmarks")
                 continue
-            bookmarks = self.recurse_bookmarks_children(data['roots'][key]['children'])
-            if bookmarks:
-                all_bookmarks.append(bookmarks)
+            self.recurse_bookmarks_children(data['roots'][key]['children'])
+        for bookmark in self.all_bookmarks:
+            print(bookmark)
         return None
     
     def get_autofill_address_info(self):
