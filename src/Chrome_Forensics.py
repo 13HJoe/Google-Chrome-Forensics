@@ -6,8 +6,11 @@ from Crypto.Cipher import AES
 import sqlite3
 import csv
 import datetime
+import requests_oauthlib
 
 from struct import unpack # upack from buffer -> returns tuple
+import copy
+import re
 
 class Block:
     # /net/disk_cache/blockfile/disk_format.h
@@ -108,8 +111,8 @@ class Address:
     
     def build_name(self):
         self.block_type = int(bin(self.addr)[3:6], 2)
-        print(bin(self.addr)[2:])
-        print(len(bin(self.addr)[2:]))
+        #print(bin(self.addr)[2:])
+        #print(len(bin(self.addr)[2:]))
 
         # ref :- https://github.com/libyal/dtformats/blob/main/documentation/Chrome%20Cache%20file%20format.asciidoc#2-cache-address
         if self.block_type == Address.SEPERATE_FILE:
@@ -131,13 +134,69 @@ class Address:
             self.block_num = int(bin(self.addr)[18:], 2)
         return None
 
+class Data:
+    HTTP_HEADER = 0
+    OTHER = 1
+    def __init__(self, address, size, ishttpheader=False):
+        self.address = address
+        self.size = size
+        self.data_type = Data.OTHER
+        #print(self.address.file_name)
+        
+        with open(os.path.join(self.address.path, self.address.file_name), 'rb') as data:
+            if self.address.block_type == Address.SEPERATE_FILE:
+                self.data = data.read()
+            else:
+                data.seek(8192 + self.address.block_num * self.address.entry_size)
+                self.data = data.read(size)
+        
+        if ishttpheader and self.address.block_type != Address.SEPERATE_FILE:
+            data_copy = copy.deepcopy(self.data)
+            start = re.search(b'HTTP', data_copy)
+            if start is None:
+                return
+            else:
+                data_copy = data_copy[start.start():]
+                self.data_type = Data.HTTP_HEADER
+            end = re.search(b'\x00\x00', data_copy)
+            if end is None:
+                return
+            else:
+                data_copy = data_copy[end.end()-2]
+            
+                
+
+            
+
+
+
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class Entry:
     def __init__(self, address):
-        with open(os.path.join(address.path, address.filename), 'rb') as block:
+        with open(os.path.join(address.path, address.file_name), 'rb') as block:
             # skip header -> 8KB
-            block.seek(8192 + address)
+            block.seek(8192 + address.block_num * address.entry_size)
 
             # disk_cache/blockfile/disk_format.h 
 
@@ -167,18 +226,19 @@ class Entry:
             self.key_len = unpack("I", block.read(4))[0]
             # optional address of long key
             self.long_key = unpack("I", block.read(4))[0]
-            # store up to 4 data streams for each entry
-            self.data_size[4] = [unpack("I", block.read(4))[0] for _ in range(4)]
+            # store up to 4 data streams for each entry 
+            # array of data_stream sizes
+            self.data_size = [unpack("I", block.read(4))[0] for _ in range(4)]
+            # array of data stream cache addresses
             self.data = []
-
             for i in range(4):
                 data_raw_addr = unpack("I", block.read(4))[0]
                 try:
                     data_addr = Address(data_raw_addr, address.path)
-                    self.data.append(None)
+                    self.data.append(Data(data_addr, self.data_size[i], True))
                 except:
                     pass
-            
+            # flags that can be applied to an entry
             """
             flags
             PARENT_ENTRY = 1,         // This entry has children (sparse) entries.
@@ -191,7 +251,7 @@ class Entry:
             if self.long_key == 0:
                 self.key = block.read(self.key_len).decode('ascii')
             else:
-                self.key = None
+                self.key = Data(Address(self.long_key, address.path), self.key_len, True)
 
 
 
@@ -463,10 +523,25 @@ class Chrome_Forensics:
                 if raw != 0:
                     entry = Entry(Address(raw, cache_path))
                     cache.append(entry) 
+                    while entry.next != 0:
+                        entry = Entry(Address(entry.next, cache_path))
+                        cache.append(entry)
+        
+        c = 0
+        for entry in cache:
+            for data_stream in entry.data:
+                try:
+                    print(data_stream.data)
+                    c+=1
+                except:
+                    pass
+            if c >= 40:
+                break
+        
             
 
 obj = Chrome_Forensics()
-obj.get_bookmarks()
+obj.cache_parse()
 
 
 
