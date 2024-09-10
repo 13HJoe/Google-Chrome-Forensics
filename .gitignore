@@ -3,3 +3,5 @@ out/
 build/out/
 build/gui/
 src/out/
+build/gui/cust_test.py
+build/gui/cust_frame.py

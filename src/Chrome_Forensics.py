@@ -6,7 +6,7 @@ from Crypto.Cipher import AES
 import sqlite3
 import csv
 import datetime
-import requests_oauthlib
+import sys
 
 from struct import unpack # upack from buffer -> returns tuple
 import copy
@@ -164,33 +164,14 @@ class Data:
             else:
                 data_copy = data_copy[end.end()-2]
             
-                
-
-            
-
-
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            self.headers = {}
+            data_copy = data_copy.split(b'\x00')[1:]
+            for line in data_copy:
+                temp = line.split(b':')
+                v = b':'.join(temp[1:])
+                v = v.decode(encoding='utf-8')
+                k = temp[0].decode(encoding='utf-8').lower()
+                self.headers[k] = v
 
 class Entry:
     def __init__(self, address):
@@ -238,6 +219,13 @@ class Entry:
                     self.data.append(Data(data_addr, self.data_size[i], True))
                 except:
                     pass
+            
+            self.httpHeader = None
+            for data in self.data:
+                if data.data_type == Data.HTTP_HEADER:
+                    self.httpHeader = data
+                    break
+            
             # flags that can be applied to an entry
             """
             flags
@@ -252,7 +240,6 @@ class Entry:
                 self.key = block.read(self.key_len).decode('ascii')
             else:
                 self.key = Data(Address(self.long_key, address.path), self.key_len, True)
-
 
 
 
@@ -422,7 +409,6 @@ class Chrome_Forensics:
             original_mime_type = line[26]
             print(f"{path=},{timestamp=},{size=},{tab_url=},{mime_type=},{original_mime_type=},")
 
-
     def get_google_search_history(self):
         query = "SELECT visits.visit_time, urls.url, keyword_search_terms.term FROM urls, visits, keyword_search_terms WHERE urls.id = keyword_search_terms.url_id AND urls.id = visits.url ORDER BY visits.visit_time DESC;"
         table_data = self.exec_query(query=query)
@@ -529,14 +515,23 @@ class Chrome_Forensics:
         
         c = 0
         for entry in cache:
-            for data_stream in entry.data:
+            for d in entry.data:
+                if d is not entry.httpHeader:
+                    t = "unknown"
+                    if entry.httpHeader is not None:
+                        try:
+                            t = entry.httpHeader.header['content-type'].split(';')[0].strip()
+                            print(t)
+                        except:
+                            pass
+            if entry.httpHeader is not None:
                 try:
-                    print(data_stream.data)
-                    c+=1
+                    t = entry.httpHeader.headers['content-type'].split(';')[0].strip()
+                    print(t)
                 except:
                     pass
-            if c >= 40:
-                break
+
+        
         
             
 

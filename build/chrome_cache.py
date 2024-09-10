@@ -72,7 +72,6 @@ class Address():
             self.file_name = 'data_' + str(int(bin(addr)[10:18], 2))
             self.block_num = int(bin(addr)[18:], 2)
 
-
 class Data():
     HTTP_HEADER = 0
     OTHER = 1
@@ -201,6 +200,7 @@ if __name__ == "__main__":
                             pass
                 except:
                     pass
+        
         if entry.httpHeader is not None:
             try:
                 name = hex(entry.hash) + '.header'
