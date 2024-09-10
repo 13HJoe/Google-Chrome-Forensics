@@ -12,6 +12,9 @@ from struct import unpack # upack from buffer -> returns tuple
 import copy
 import re
 
+from customtkinter import *
+import customtkinter
+
 class Block:
     # /net/disk_cache/blockfile/disk_format.h
     # line 58
@@ -240,7 +243,6 @@ class Entry:
                 self.key = block.read(self.key_len).decode('ascii')
             else:
                 self.key = Data(Address(self.long_key, address.path), self.key_len, True)
-
 
 
 class Chrome_Forensics:
@@ -485,6 +487,7 @@ class Chrome_Forensics:
             url = row[0]
             title = row[2]
             print(f"{url=}"+(" "*(35-len(url))+f"|  {title=}"))
+    
     #-----------------------------------------------------------------------------------------------------------------------------#
     # 
     # [[Cache]]
@@ -513,7 +516,6 @@ class Chrome_Forensics:
                         entry = Entry(Address(entry.next, cache_path))
                         cache.append(entry)
         
-        c = 0
         for entry in cache:
             for d in entry.data:
                 if d is not entry.httpHeader:
@@ -531,14 +533,39 @@ class Chrome_Forensics:
                 except:
                     pass
 
-        
-        
-            
-
 obj = Chrome_Forensics()
-obj.cache_parse()
+print(getattr(obj,"get_top_sites")())
+
+#-------------------------------DISPLAY GUI------------------------------------------#
+class Forensic_View:
+    def __init__(self):
+        self.app = CTk()
+        self.data_obj = Chrome_Forensics()
+        self.app.geometry("800x500")
+        self.app.resizable(width=False, height=False)
+        self.tabview = CTkTabview(master=self.app)
+        self.tabview.pack(padx=10, pady=10)
+    """
+    note this dumbfuck -> callback functions have NO FUCKING ARGUMENTS - DON'T BREAK SHIT 
+    """
+
+    def add_tab_view(self, source_names):
+        for source_name in source_names:
+            source_name = "get_"+source_name
+            #data = self.data_obj."get_"+source_name
+        pass
+    
 
 
 
-
-
+    def run(self):
+        source_list = {"Login Data":"chrome_passwords",
+                       "Cookies":"chrome_cookies",
+                       "Credit Card Data":"credit_card_info",
+                       "Navigation":"navigation_history",
+                       "Downloads":"download_history",
+                       "Searches":"google_search_history",
+                       "Bookmarks":"bookmarks",
+                       "Autofill Address":"autofill_address_info",
+                       "Top Sites":"top_sites"}
+        self.app.mainloop()

@@ -9,7 +9,7 @@ import re
 import customtkinter
 import copy
 
-import re._compiler
+import re
 
 class CTkTable(customtkinter.CTkFrame):
     """ CTkTable Widget """
