@@ -417,11 +417,11 @@ class Chrome_Forensics:
         return ret_data
     
     def get_download_history(self):
-        query = "SELECT * FROM downloads ORDER BY end_time;"
+        query = "SELECT * FROM downloads ORDER BY start_time;"
         table_data = self.exec_query(query=query, list_mode=True)
         ret_data = [["Path","Timestamp","Size","URL","MIME_type","Original MIME_type"]]
         for line in table_data:
-            path = line[1]
+            path = line[2]
             timestamp = self.date_from_webkit(int(line[4]))
             timestamp = str(timestamp.date())+" "+str(timestamp.time())
 
@@ -616,18 +616,18 @@ class Forensic_View():
     def search_view(self, source_key, source_index):
         search_term = self.search_field_objects[source_key].get()
         response = []
-        pattern = re.compile(".*"+str(search_term)+".*")
-        print(search_term ," -> ", source_key)
+        comp_string = ""
+        for char in str(search_term):
+            if char==".":
+                comp_string += "\."
+            else:
+                comp_string += char
+
+        pattern = re.compile(".*"+str(comp_string)+".*")
+        print(comp_string ," -> ", source_key)
         for line in self.data_list[source_index]:
             for obj in line:
-                comp_string = ""
-                for char in str(obj):
-                    if char==".":
-                        comp_string += "\."
-                    else:
-                        comp_string += char
-
-                if pattern.match(comp_string):
+                if pattern.match(str(obj)):
                     response.append(line)
                     break
         
@@ -715,9 +715,7 @@ class Forensic_View():
             # SEARCH
             
             self.search_field_objects[key] = CTkEntry(master=self.tabview.tab(key), width=1000)
-            search_button_objects[key] = CTkButton(master=self.tabview.tab(key),
-                                                   text="search",
-                                                   command=lambda:self.search_view(key,index))
+            search_button_objects[key] = CTkButton(master=self.tabview.tab(key),text="search",command=lambda key=key, index=index :self.search_view(key,index))
             
             self.search_field_objects[key].pack(pady=10,                                                
                                                 side="left",
