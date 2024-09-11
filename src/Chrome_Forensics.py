@@ -645,13 +645,12 @@ class Forensic_View():
             # POPULATE data cells
             for row in data_list[index][1:]:
                 try:
-                    table_objects_dict[index].insert('',values=row)
+                    table_objects_dict[key].insert('','end',values=row)
                 except:
                     pass
             
             # initialize the table
-            table_objects_dict[key].pack(expand=True,
-                                         fill="both")
+            table_objects_dict[key].pack(expand=True,fill="both")
             
         
 
