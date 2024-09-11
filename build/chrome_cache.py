@@ -181,7 +181,7 @@ if __name__ == "__main__":
                         t = entry.httpHeader.headers['content-type'].split(';')[0].strip()
                     except:
                         pass
-
+                print(t)
                 name = hex(entry.hash) + '_' + str(i)
                 data_path = os.path.join('out', t, name)
                 os.makedirs(os.path.dirname(data_path), exist_ok=True)
@@ -205,6 +205,7 @@ if __name__ == "__main__":
             try:
                 name = hex(entry.hash) + '.header'
                 t = entry.httpHeader.headers['content-type'].split(';')[0].strip()
+                print(t)
                 header_path = os.path.join('out',t,name)
                 os.makedirs(os.path.dirname(header_path), exist_ok=True)
                 with open(header_path,'w') as header_f:

@@ -165,13 +165,14 @@ class Data:
                 return
             else:
                 data_copy = data_copy[start.start():]
-                self.data_type = Data.HTTP_HEADER
+
             end = re.search(b'\x00\x00', data_copy)
             if end is None:
                 return
             else:
-                data_copy = data_copy[end.end()-2]
+                data_copy = data_copy[:end.end()-2]
             
+            self.data_type = Data.HTTP_HEADER
             self.headers = {}
             data_copy = data_copy.split(b'\x00')[1:]
             for line in data_copy:
@@ -553,21 +554,28 @@ class Chrome_Forensics:
                         cache.append(entry)
         
         for entry in cache:
-            for d in entry.data:
+            for i, d in enumerate(entry.data):
                 if d is not entry.httpHeader:
                     t = "unknown"
                     if entry.httpHeader is not None:
                         try:
-                            t = entry.httpHeader.header['content-type'].split(';')[0].strip()
-                            print(t)
+                            t = entry.httpHeader.headers['content-type'].split(';')[0].strip()
                         except:
                             pass
+            # parse out the HTTP headers
             if entry.httpHeader is not None:
                 try:
-                    t = entry.httpHeader.headers['content-type'].split(';')[0].strip()
-                    print(t)
+                    name = hex(entry.hash) + ".http_header"
+                    type = entry.httpHeader.headers['content-type'].split(';')[0].strip()
+                    header_path = os.path.join("parsed cache", t, name)
+                    os.makedirs(os.path.dirname(header_path), exist_ok=True)
+                    with open(header_path, 'w') as http_header_file:
+                        for key, value in entry.httpHeader.headers.items():
+                            http_header_file.write("{}: {}\n".format(key, value))
+                    
                 except:
                     pass
+                    
 
 #-------------------------------DISPLAY GUI------------------------------------------#
 class Forensic_View():
@@ -638,5 +646,5 @@ class Forensic_View():
         self.app.mainloop()
 
 
-FOR_obj = Forensic_View()
-FOR_obj.run()
+obj = Chrome_Forensics()
+obj.cache_parse()
