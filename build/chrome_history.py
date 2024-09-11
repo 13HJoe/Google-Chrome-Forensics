@@ -69,13 +69,14 @@ class Parse_History():
     def get_google_search_history(self):
         query = "SELECT visits.visit_time, urls.url, keyword_search_terms.term FROM keyword_search_terms, urls, visits WHERE urls.id = keyword_search_terms.url_id  AND urls.id = visits.url ORDER BY visits.visit_time DESC;"
         data = self.exec_query(query=query)
-        new_data = [["VISIT TIME","URL","KEYWORD SEARCH TERM"]]
+        new_data = [["Visit Time","URL","Search Term"]]
         for line in data:
             new_line = [self.date_from_webkit(line[0])]
             for obj in line[1:]:
                 new_line.append(obj)
             new_data.append(new_line)
-        self.write_to_csv("History",new_data)
+        return new_data
+        #self.write_to_csv("History",new_data)
         '''
         for line in data:
             try:
@@ -96,6 +97,3 @@ class Parse_History():
                     pass
 
     
-obj = Parse_History()
-#query = "SELECT visits.visit_time, urls.url, urls.visit_count, urls.typed_count, urls.hidden FROM urls, visits WHERE urls.id = visits.url ORDER BY visits.visit_time DESC;"
-obj.get_google_search_history()

@@ -343,6 +343,7 @@ class Chrome_Forensics:
         query = "SELECT action_url, origin_url, username_value, password_value FROM logins;"
         login_data = self.exec_query(query=query, db_path=db_path)
 
+        ret_data = [["URL", "Username","Password"]]
         for row in login_data:
             action_url = row[0]
             origin_url = row[1]
@@ -351,7 +352,8 @@ class Chrome_Forensics:
             encrypted_password_buffer = row[3]
             decrypted_password = self.decrypt_data(buffer=encrypted_password_buffer)
             if len(decrypted_password) != 0:
-                print(url,"[+]",username,"[+]",decrypted_password)
+                ret_data.append([url, username, decrypted_password])
+                #print(url,"[+]",username,"[+]",decrypted_password)
             
     def get_chrome_cookies(self):
         db_path = self.base_path + "Default/Network/Cookies"
@@ -375,8 +377,11 @@ class Chrome_Forensics:
             for cookie in cookies:
                 print()
                 for key, val in cookie.items():
-                    title = key.title().replace('_',' ')
-                    print(f"{title}:{val}")
+                    try:
+                        title = key.title().replace('_',' ')
+                        print(f"{title}:{val}")
+                    except:
+                        pass
                 print()
  
     def get_credit_card_info(self):
@@ -626,10 +631,6 @@ class Forensic_View():
             table_objects[key].pack(expand=True, anchor='n', padx=0, pady=0)
             print("[+] table -> ", key)
 
-        
-
-        
-
 
     def run(self):
         source_list = {"Login Data":"chrome_passwords",
@@ -643,17 +644,10 @@ class Forensic_View():
                        "Top Sites":"top_sites"}
         
         test_list = {"Top Sites":"top_sites"}
-        '''
-        {"Navigation":"navigation_history"}
-        "Downloads":"download_history",
-        "Searches":"google_search_history",
-        "Bookmarks":"bookmarks",
-        "Autofill Address":"autofill_address_info",
-        "Top Sites":"top_sites"}'''
 
         self.add_tab_views(test_list)
         self.app.mainloop()
 
 
 obj = Chrome_Forensics()
-obj.cache_parse()
+obj.get_chrome_cookies()
