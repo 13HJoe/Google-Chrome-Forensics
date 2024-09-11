@@ -608,76 +608,125 @@ class Forensic_View():
         self.app.columnconfigure(0, weight=1)
         self.app.rowconfigure(0, weight=1)
         self.app.title("Chrome Forensics")
-        #self.app.attributes('-fullscreen', "True")
+        self.app.resizable(False, False)
         self.data_obj = Chrome_Forensics()
         self.tabview = CTkTabview(master=self.app, segmented_button_selected_color="#08131f")
         self.tabview.pack(fill=BOTH)
+    
+    def search_view(self, source_key, source_index):
+        search_term = self.search_field_objects[source_key].get()
+        response = []
+        pattern = re.compile(".*"+str(search_term)+".*")
+        print(search_term ," -> ", source_key)
+        for line in self.data_list[source_index]:
+            for obj in line:
+                comp_string = ""
+                for char in str(obj):
+                    if char==".":
+                        comp_string += "\."
+                    else:
+                        comp_string += char
+
+                if pattern.match(comp_string):
+                    response.append(line)
+                    break
+        
+        for i in self.table_objects_dict[source_key].get_children():
+            self.table_objects_dict[source_key].delete(i)
+        self.app.update()
+
+        for row in response:
+            try:
+                self.table_objects_dict[source_key].insert('','end',values=row)
+            except:
+                pass
 
 
     def add_tab_views(self, sources_dict):
-        data_list = []
+        self.data_list = []
 
         # Create a Tab for each key in the source list
         for index, key in enumerate(sources_dict):
             self.tabview.add(key)
             source_name = "get_" + sources_dict[key]
             data = getattr(self.data_obj, source_name)() # returns list of lists
-            if data == None:
+            if data == None or len(data) == 0:
+                print(data)
                 print(key)
                 sys.exit(0)
-            data_list.append(data)
+            self.data_list.append(data)
             print("[+] Recevied " + key)
         
+        # Create a FRAME to prevent overlap
+        self.table_frames = {}
         # Create a "table" objects for each key
-        table_objects_dict = {}
+        self.table_objects_dict = {}
         # Create "scrollbar" objects for each key
         scrollbar_objects_vertical_dict = {}
         scrollbar_objects_horizontal_dict = {}
+        # Create search funcs for each key
+        self.search_field_objects = {}
+        search_button_objects = {}
         for index, key in enumerate(sources_dict):
+
+            self.table_frames[key] = CTkFrame(master=self.tabview.tab(key))
+            self.table_frames[key].pack(expand=True, fill="both")
 
             # TreeView TABLE object
             column_identifiers = (0,)
-            for i in range(len(data_list[index][0])):
+            for i in range(len(self.data_list[index][0])):
                 column_identifiers += (i+1,)
-            table_objects_dict[key] = ttk.Treeview(master=self.tabview.tab(key),
+            self.table_objects_dict[key] = ttk.Treeview(master=self.table_frames[key],
                                                    columns = column_identifiers[1:],
                                                    show = 'headings')
             
             # POPULATE the table header
-            for i, head_val in enumerate(data_list[index][0]):
-                table_objects_dict[key].heading(i+1, text=head_val)
+            for i, head_val in enumerate(self.data_list[index][0]):
+                self.table_objects_dict[key].heading(i+1, text=head_val)
             
             # POPULATE data cells
-            for row in data_list[index][1:]:
+            for row in self.data_list[index][1:]:
                 try:
-                    table_objects_dict[key].insert('','end',values=row)
+                   self.table_objects_dict[key].insert('','end',values=row)
                 except:
                     pass
             
             # initialize the table
-            table_objects_dict[key].pack(expand=True,fill="both")
+            self.table_objects_dict[key].pack(expand=True, fill="both")
             
             # scrollbar for each object
-            scrollbar_objects_vertical_dict[key] = ttk.Scrollbar(master=self.tabview.tab(key),
-                                            orient='vertical',
-                                            command=table_objects_dict[key].yview)
-            table_objects_dict[key].configure(yscrollcommand=scrollbar_objects_vertical_dict[key].set)
+            scrollbar_objects_vertical_dict[key] = ttk.Scrollbar(master=self.table_frames[key],
+                                            orient = 'vertical',
+                                            command = self.table_objects_dict[key].yview)
+            self.table_objects_dict[key].configure(yscrollcommand=scrollbar_objects_vertical_dict[key].set)
             scrollbar_objects_vertical_dict[key].place(relx = 1,
                                   rely = 0,
                                   relheight = 1,
                                   anchor = 'ne')
-            scrollbar_objects_horizontal_dict[key] = ttk.Scrollbar(master=self.tabview.tab(key),
-                                            orient='horizontal',
-                                            command=table_objects_dict[key].xview)
-            table_objects_dict[key].configure(xscrollcommand=scrollbar_objects_horizontal_dict[key].set)
+            scrollbar_objects_horizontal_dict[key] = ttk.Scrollbar(master=self.table_frames[key],
+                                            orient = 'horizontal',
+                                            command = self.table_objects_dict[key].xview)
+            self.table_objects_dict[key].configure(xscrollcommand=scrollbar_objects_horizontal_dict[key].set)
             scrollbar_objects_horizontal_dict[key].place(relx = 0,
                                   rely = 1,
                                   relwidth = 1,
                                   anchor = 'sw')
 
-
-
-
+            # SEARCH
+            
+            self.search_field_objects[key] = CTkEntry(master=self.tabview.tab(key), width=1000)
+            search_button_objects[key] = CTkButton(master=self.tabview.tab(key),
+                                                   text="search",
+                                                   command=lambda:self.search_view(key,index))
+            
+            self.search_field_objects[key].pack(pady=10,                                                
+                                                side="left",
+                                                anchor="s",
+                                                fill="x")
+            search_button_objects[key].pack(pady=10,
+                                            side="left",
+                                            anchor="s",
+                                            fill="x")
 
 
     def run(self):
