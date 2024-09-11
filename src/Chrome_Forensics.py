@@ -7,7 +7,6 @@ import sqlite3
 import csv
 import datetime
 import sys
-import tkinter
 import timeit
 
 from struct import unpack # upack from buffer -> returns tuple
@@ -15,7 +14,8 @@ import copy
 import re
 
 from customtkinter import *
-import customtkinter
+from tkinter import ttk
+from tkinter import *
 
 
 
@@ -353,6 +353,8 @@ class Chrome_Forensics:
             if len(decrypted_password) != 0:
                 ret_data.append([url, username, decrypted_password])
                 #print(url,"[+]",username,"[+]",decrypted_password)
+        
+        return ret_data
             
     def get_chrome_cookies(self):
         db_path = self.base_path + "Default/Network/Cookies"
@@ -593,6 +595,12 @@ class Chrome_Forensics:
                     
 
 #-------------------------------DISPLAY GUI------------------------------------------#
+class Rep_Table():
+    def __init__(self):
+        pass
+
+
+
 class Forensic_View():
     def __init__(self):
         self.app = CTk()
@@ -603,22 +611,54 @@ class Forensic_View():
         #self.app.attributes('-fullscreen', "True")
         self.data_obj = Chrome_Forensics()
         self.tabview = CTkTabview(master=self.app, segmented_button_selected_color="#08131f")
+        self.tabview.pack(fill=BOTH)
 
 
-
-    def add_tab_views(self, sources):
+    def add_tab_views(self, sources_dict):
         data_list = []
-        frame_name_list = []
-        for index, key in enumerate(sources):
+
+        # Create a Tab for each key in the source list
+        for index, key in enumerate(sources_dict):
             self.tabview.add(key)
-            source_name = "get_" + sources[key]
-            data = getattr(self.data_obj, source_name)()
+            source_name = "get_" + sources_dict[key]
+            data = getattr(self.data_obj, source_name)() # returns list of lists
+            if data == None:
+                print(key)
+                sys.exit(0)
             data_list.append(data)
+            print("[+] Recevied " + key)
+        
+        # Create a table object for each key
+        table_objects_dict = {}
+        for index, key in enumerate(sources_dict):
+            column_identifiers = (0,)
+            for i in range(len(data_list[index][0])):
+                column_identifiers += (i+1,)
+            table_objects_dict[key] = ttk.Treeview(master=self.tabview.tab(key),
+                                                   columns = column_identifiers[1:],
+                                                   show = 'headings')
+            
+            # POPULATE the table header
+            for i, head_val in enumerate(data_list[index][0]):
+                table_objects_dict[key].heading(i+1, text=head_val)
+            
+            # POPULATE data cells
+            for row in data_list[index][1:]:
+                try:
+                    table_objects_dict[index].insert('',values=row)
+                except:
+                    pass
+            
+            # initialize the table
+            table_objects_dict[key].pack(expand=True,
+                                         fill="both")
+            
         
 
 
     def run(self):
         source_list = {"Login Data":"chrome_passwords",
+                       #"Browser Cookies":"chrome_cookies"
                        "Credit Card Data":"credit_card_info",
                        "Navigation":"navigation_history",
                        "Downloads":"download_history",
@@ -629,11 +669,13 @@ class Forensic_View():
         
         test_list = {"Bookmarks":"bookmarks"}
 
-        self.add_tab_views(test_list)
+        self.add_tab_views(source_list)
         self.app.mainloop()
 
 
-"""obj = Chrome_Forensics()
-obj.get_chrome_cookies()"""
+"""
+obj = Chrome_Forensics()
+print(obj.get_chrome_passwords())
+"""
 obj = Forensic_View()
 obj.run()

@@ -40,6 +40,4 @@ scrollbar_table.place(relx=1,
                       relheight = 1,
                       anchor = 'ne')
 
-
-
 app.mainloop()
