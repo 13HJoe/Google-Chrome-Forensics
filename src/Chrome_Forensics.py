@@ -15,7 +15,6 @@ import copy
 import re
 
 from customtkinter import *
-from CTkTable import *
 import customtkinter
 
 
@@ -468,9 +467,11 @@ class Chrome_Forensics:
                     "url":object['url']
                 }
                 """
+                date_added = self.date_from_webkit(object['date_added'])
+                date_last_used = self.date_from_webkit(object['date_added'])
                 ret_data = [str(folder) if folder else "Orphan",
-                            self.date_from_webkit(object['date_added']).timestamp,
-                            self.date_from_webkit(object['date_last_used']).timestamp,
+                            str(date_added.date()) +"  "+ str(date_added.time()),
+                            str(date_last_used.date()) +"  "+ str(date_last_used.time()),
                             object['name'],
                             object['url']]
                 self.all_bookmarks.append(ret_data)
@@ -595,15 +596,13 @@ class Chrome_Forensics:
 class Forensic_View():
     def __init__(self):
         self.app = CTk()
-        #self.app.geometry("1200x1000")
+        self.app.geometry("1200x600")
         self.app.columnconfigure(0, weight=1)
         self.app.rowconfigure(0, weight=1)
         self.app.title("Chrome Forensics")
-        self.app.attributes('-fullscreen', "True")
+        #self.app.attributes('-fullscreen', "True")
         self.data_obj = Chrome_Forensics()
-        #self.app.resizable(width=False, height=False)
-        self.tabview = CTkTabview(master=self.app)
-        self.tabview.grid(padx=10, pady=10, sticky="news")
+        self.tabview = CTkTabview(master=self.app, segmented_button_selected_color="#08131f")
 
 
 
@@ -616,25 +615,10 @@ class Forensic_View():
             data = getattr(self.data_obj, source_name)()
             data_list.append(data)
         
-        frame_objects = {}
-        horizontal_frame_objects = {}
-        for index, key in enumerate(sources):
-            frame_objects[key] = CTkScrollableFrame(master=self.tabview.tab(key), width=1100, height=900,
-                                                    fg_color="#24000f", orientation="vertical")
-            horizontal_frame_objects[key] = CTkScrollableFrame(master=frame_objects[key], width=1100,
-                                                               fg_color="#24000f", orientation="horizontal")
-            frame_objects[key].pack(expand=True, anchor='n', padx=0, pady=0)
-
-        table_objects = {}
-        for index, key in enumerate(sources):            
-            table_objects[key] = CTkTable(master=frame_objects[key], values=data_list[index])
-            table_objects[key].pack(expand=True, anchor='n', padx=0, pady=0)
-            print("[+] table -> ", key)
 
 
     def run(self):
         source_list = {"Login Data":"chrome_passwords",
-                       "Cookies":"chrome_cookies",
                        "Credit Card Data":"credit_card_info",
                        "Navigation":"navigation_history",
                        "Downloads":"download_history",
@@ -643,11 +627,13 @@ class Forensic_View():
                        "Autofill Address":"autofill_address_info",
                        "Top Sites":"top_sites"}
         
-        test_list = {"Top Sites":"top_sites"}
+        test_list = {"Bookmarks":"bookmarks"}
 
         self.add_tab_views(test_list)
         self.app.mainloop()
 
 
-obj = Chrome_Forensics()
-obj.get_chrome_cookies()
+"""obj = Chrome_Forensics()
+obj.get_chrome_cookies()"""
+obj = Forensic_View()
+obj.run()

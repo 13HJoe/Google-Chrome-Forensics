@@ -1,6 +1,7 @@
 from chrome_history import Parse_History
 from customtkinter import *
 from tkinter import *
+from tkinter import ttk
 import re
 
 obj = Parse_History()
@@ -19,22 +20,26 @@ tabview.pack(fill=BOTH)
 
 tabview.add("Chrome History")
 
-i = 0
-for j, col in enumerate(search_data[0]):
-    text = Text(master=tabview.tab("Chrome History"),
-                width=30,
-                height=1,
-                bg="#9BC2E6")
-    text.grid(row=i, column=j)
-    text.insert(INSERT, col)
+table = ttk.Treeview(master=tabview.tab("Chrome History"), columns = (1,2,3), show = 'headings')
+for i,head_val in enumerate(search_data[0]):
+    table.heading(i+1, text=head_val)
+for row in search_data[1:]:
+    try:
+        table.insert('', 'end', values=row)
+        print(row)
+    except:
+        pass
+table.pack(expand=True, fill="both")
 
-for i in range(rows-1):
-    for j in range(columns-1):
-        text = Text(master=tabview.tab("Chrome History"),
-                    width=30,
-                    height=1)
-        text.grid(row=i+1, column=j)
-        text.insert(INSERT, search_data[i][j])
+scrollbar_table = ttk.Scrollbar(master=tabview.tab("Chrome History"),
+                               orient='vertical',
+                               command=table.yview)
+table.configure(yscrollcommand=scrollbar_table.set)
+scrollbar_table.place(relx=1, 
+                      rely =0,
+                      relheight = 1,
+                      anchor = 'ne')
+
 
 
 app.mainloop()
