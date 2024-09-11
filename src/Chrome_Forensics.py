@@ -176,9 +176,11 @@ class Data:
             self.headers = {}
             data_copy = data_copy.split(b'\x00')[1:]
             for line in data_copy:
+                print(line)
                 temp = line.split(b':')
                 v = b':'.join(temp[1:])
                 v = v.decode(encoding='utf-8')
+                print(temp[0].decode(),':',v)
                 k = temp[0].decode(encoding='utf-8').lower()
                 self.headers[k] = v
 
@@ -553,21 +555,28 @@ class Chrome_Forensics:
                         entry = Entry(Address(entry.next, cache_path))
                         cache.append(entry)
         
+        c = 0
         for entry in cache:
             for i, d in enumerate(entry.data):
                 if d is not entry.httpHeader:
-                    t = "unknown"
+                    type = "unknown"
                     if entry.httpHeader is not None:
                         try:
-                            t = entry.httpHeader.headers['content-type'].split(';')[0].strip()
+                            type = entry.httpHeader.headers['content-type'].split(';')[0].strip()
                         except:
                             pass
+                    name = hex(entry.hash) + '_' + str(i)
+                    # write out parsed data streams
+                    data_path = os.path.join("parsed cache", type, name)
+                    os.makedirs(os.path.dirname(data_path), exist_ok=True)
+                    with open(data_path, 'wb') as obj:
+                        obj.write(d.data)
             # parse out the HTTP headers
             if entry.httpHeader is not None:
                 try:
                     name = hex(entry.hash) + ".http_header"
                     type = entry.httpHeader.headers['content-type'].split(';')[0].strip()
-                    header_path = os.path.join("parsed cache", t, name)
+                    header_path = os.path.join("parsed cache", type, name)
                     os.makedirs(os.path.dirname(header_path), exist_ok=True)
                     with open(header_path, 'w') as http_header_file:
                         for key, value in entry.httpHeader.headers.items():
