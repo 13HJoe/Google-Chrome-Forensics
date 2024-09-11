@@ -761,7 +761,8 @@ tabview.add("Autofill Address")
 
 ret_list = get_top_sites()
 
-def search():
+def search(val):
+    print(val)
     temp = ret_list
     value=searchbox.get()
     res = []
@@ -775,12 +776,14 @@ def search():
                 break
     label.configure(values=res)
 
+print(tabview.tab("Top Sites"))
 label = CTkTable(master=tabview.tab("Top Sites"), values=ret_list,header_color="#6600ff")
 label.pack(anchor='s', expand=True, pady=0.5, padx=1)
 searchbox = CTkEntry(master=tabview.tab("Top Sites"))
 searchbtn = CTkButton(master=tabview.tab("Top Sites"), text="search",
-                      command=search)
+                      command=search(10))
 """
+for direct modules
 note this down dumbfuck -> callback functions NO FUCKING ARGUMENTS AT ALL - DON'T BREAK SHIT 
 """
 searchbox.pack(expand=True)

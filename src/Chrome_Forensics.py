@@ -7,13 +7,18 @@ import sqlite3
 import csv
 import datetime
 import sys
+import tkinter
+import timeit
 
 from struct import unpack # upack from buffer -> returns tuple
 import copy
 import re
 
 from customtkinter import *
+from CTkTable import *
 import customtkinter
+
+
 
 class Block:
     # /net/disk_cache/blockfile/disk_format.h
@@ -375,31 +380,37 @@ class Chrome_Forensics:
         db_path = self.base_path + "Default/Web Data"
         query = "SELECT * FROM credit_cards;"
         data = self.exec_query(query=query, list_mode=True, db_path=db_path)
+        ret_data = [["Card Number","Name","Expiry Date"]]
         for line in data:
             encrypted_card_number_blob = line[4]
             card_no = self.decrypt_data(encrypted_card_number_blob)
             name = line[1]
             expiry_date = str(line[2])+"/"+str(line[3])
-
-            print(f"{card_no=}, {name=}, {expiry_date=}")
+            temp = [card_no, name, expiry_date]
+            ret_data.append(temp)
+        return ret_data
+            #print(f"{card_no=}, {name=}, {expiry_date=}")
     #-----------------------------------------------------------------------------------------------------------------------------#
     # 
     # [[Plaintext]] 
     def get_navigation_history(self):
         query = "SELECT * FROM urls ORDER BY last_visit_time DESC;"
         query_oc_2 = "SELECT visits.visit_time, urls.url, urls.visit_count, urls.typed_count, urls.hidden FROM urls, visits WHERE urls.id = visits.url ORDER BY visits.visit_time DESC;"
-        table_data = self.exec_query(query=query)
+        table_data = self.exec_query(query=query_oc_2)
+        ret_data = [["time","url","count"]]
         for line in table_data:
             try:
-                webkit_date = int(line[5])
+                webkit_date = int(line[0])
                 readable_date = self.date_from_webkit(webkit_date)
-                print(line,"\n","-"*50)
+                ret_data.append([readable_date, line[1], line[2]])
             except:
                 pass
+        return ret_data
     
     def get_download_history(self):
         query = "SELECT * FROM downloads ORDER BY end_time;"
         table_data = self.exec_query(query=query, list_mode=True)
+        ret_data = [["Path","Timestamp","Size","URL","MIME_type","Original MIME_type"]]
         for line in table_data:
             path = line[1]
             timestamp = self.date_from_webkit(int(line[4]))
@@ -409,18 +420,27 @@ class Chrome_Forensics:
             tab_url = line[19]
             mime_type = line[25]
             original_mime_type = line[26]
-            print(f"{path=},{timestamp=},{size=},{tab_url=},{mime_type=},{original_mime_type=},")
+            ret_data.append([path, timestamp, size, tab_url, mime_type,original_mime_type])
+            #print(f"{path=},{timestamp=},{size=},{tab_url=},{mime_type=},{original_mime_type=},")
+        return ret_data
 
     def get_google_search_history(self):
         query = "SELECT visits.visit_time, urls.url, keyword_search_terms.term FROM urls, visits, keyword_search_terms WHERE urls.id = keyword_search_terms.url_id AND urls.id = visits.url ORDER BY visits.visit_time DESC;"
         table_data = self.exec_query(query=query)
+        ret_data = [["Date","URL","Search Term"]]
         for line in table_data:
+            temp = []
             try:
                 readable_date = self.date_from_webkit(int(line[0]))
-                print(readable_date, end="==>")
-                print(line[1:])
+                temp.append(readable_date)
+                temp.append(line[1])
+                temp.append(line[2])
+                #print(readable_date, end="==>")
+                #print(line[1:])
             except:
                 pass
+            ret_data.append(temp)
+        return ret_data
 
     def recurse_bookmarks_children(self, child, folder=None):
 
@@ -431,6 +451,7 @@ class Chrome_Forensics:
                     parent = folder+"/"+parent
                 self.recurse_bookmarks_children(object['children'],folder=parent)
             else:
+                """
                 ret_data = {
                     "parent-folder-path":str(folder) if folder else "Orphan",
                     "date_added":str(self.date_from_webkit(object['date_added'])),
@@ -438,6 +459,12 @@ class Chrome_Forensics:
                     "name":object['name'],
                     "url":object['url']
                 }
+                """
+                ret_data = [str(folder) if folder else "Orphan",
+                            self.date_from_webkit(object['date_added']).timestamp,
+                            self.date_from_webkit(object['date_last_used']).timestamp,
+                            object['name'],
+                            object['url']]
                 self.all_bookmarks.append(ret_data)
         return None
     
@@ -448,15 +475,16 @@ class Chrome_Forensics:
         data = data.decode()
         data = json.loads(data)
         fobj.close()
-        self.all_bookmarks = [] # list of dict objects ( dict for each bookmark)
+        self.all_bookmarks = [["parent-folder","date_added","date_last_used","name","url"]] # list of dict objects ( dict for each bookmark)
         for key in data['roots'].keys():
             bookmark_type = data['roots'][key]['name']
             date_added = data['roots'][key]['date_added']
-            print(bookmark_type," ",self.date_from_webkit(date_added),"\n")
+            #print(bookmark_type," ",self.date_from_webkit(date_added),"\n")
             if len(data['roots'][key]['children']) == 0:
-                print("No Bookmarks")
+                #print("No Bookmarks")
                 continue
             self.recurse_bookmarks_children(data['roots'][key]['children'])
+        return self.all_bookmarks
         for bookmark in self.all_bookmarks:
             print(bookmark)
         return None
@@ -465,10 +493,12 @@ class Chrome_Forensics:
         db_path = self.base_path + "Default/Web Data"
         query = "SELECT * FROM contact_info"
         table_data = self.exec_query(db_path=db_path, query=query, list_mode=True)
+        ret_data = [["name", "email", "phone", "town_city", "state", "pin", "country_region", "organisation", "street_address"]]
         for line in table_data:
             guid = str(line[0])
             query = "SELECT value FROM contact_info_type_tokens WHERE guid='"+guid+"';"
             autofill = self.exec_query(db_path=db_path, query=query, list_mode=False)
+            temp = []
             name = autofill[3]
             email = autofill[4]
             phone = autofill[5]
@@ -478,15 +508,21 @@ class Chrome_Forensics:
             country_region = autofill[10]
             organisation = autofill[12]
             street_address = autofill[13]
+            temp = [name, email, phone, town_city, state, pin, country_region, organisation, street_address]
+            ret_data.append(temp)
+        return ret_data
 
     def get_top_sites(self):
         db_path = self.base_path + "Default/Top Sites"
         query = "SELECT * FROM top_sites ORDER BY url_rank ASC;"
         table_data = self.exec_query(db_path=db_path, query=query, list_mode=True)
+        ret_data = [["URL","RANK","TITLE"]]
         for row in table_data:
-            url = row[0]
-            title = row[2]
-            print(f"{url=}"+(" "*(35-len(url))+f"|  {title=}"))
+            temp = []
+            for obj in row:
+                temp.append(obj)
+            ret_data.append(temp)
+        return ret_data
     
     #-----------------------------------------------------------------------------------------------------------------------------#
     # 
@@ -533,29 +569,49 @@ class Chrome_Forensics:
                 except:
                     pass
 
-obj = Chrome_Forensics()
-print(getattr(obj,"get_top_sites")())
-
 #-------------------------------DISPLAY GUI------------------------------------------#
-class Forensic_View:
+class Forensic_View():
     def __init__(self):
         self.app = CTk()
+        #self.app.geometry("1200x1000")
+        self.app.columnconfigure(0, weight=1)
+        self.app.rowconfigure(0, weight=1)
+        self.app.title("Chrome Forensics")
+        self.app.attributes('-fullscreen', "True")
         self.data_obj = Chrome_Forensics()
-        self.app.geometry("800x500")
-        self.app.resizable(width=False, height=False)
+        #self.app.resizable(width=False, height=False)
         self.tabview = CTkTabview(master=self.app)
-        self.tabview.pack(padx=10, pady=10)
-    """
-    note this dumbfuck -> callback functions have NO FUCKING ARGUMENTS - DON'T BREAK SHIT 
-    """
+        self.tabview.grid(padx=10, pady=10, sticky="news")
 
-    def add_tab_view(self, source_names):
-        for source_name in source_names:
-            source_name = "get_"+source_name
-            #data = self.data_obj."get_"+source_name
-        pass
-    
 
+
+    def add_tab_views(self, sources):
+        data_list = []
+        frame_name_list = []
+        for index, key in enumerate(sources):
+            self.tabview.add(key)
+            source_name = "get_" + sources[key]
+            data = getattr(self.data_obj, source_name)()
+            data_list.append(data)
+        
+        frame_objects = {}
+        horizontal_frame_objects = {}
+        for index, key in enumerate(sources):
+            frame_objects[key] = CTkScrollableFrame(master=self.tabview.tab(key), width=1100, height=900,
+                                                    fg_color="#24000f", orientation="vertical")
+            horizontal_frame_objects[key] = CTkScrollableFrame(master=frame_objects[key], width=1100,
+                                                               fg_color="#24000f", orientation="horizontal")
+            frame_objects[key].pack(expand=True, anchor='n', padx=0, pady=0)
+
+        table_objects = {}
+        for index, key in enumerate(sources):            
+            table_objects[key] = CTkTable(master=frame_objects[key], values=data_list[index])
+            table_objects[key].pack(expand=True, anchor='n', padx=0, pady=0)
+            print("[+] table -> ", key)
+
+        
+
+        
 
 
     def run(self):
@@ -568,4 +624,19 @@ class Forensic_View:
                        "Bookmarks":"bookmarks",
                        "Autofill Address":"autofill_address_info",
                        "Top Sites":"top_sites"}
+        
+        test_list = {"Top Sites":"top_sites"}
+        '''
+        {"Navigation":"navigation_history"}
+        "Downloads":"download_history",
+        "Searches":"google_search_history",
+        "Bookmarks":"bookmarks",
+        "Autofill Address":"autofill_address_info",
+        "Top Sites":"top_sites"}'''
+
+        self.add_tab_views(test_list)
         self.app.mainloop()
+
+
+FOR_obj = Forensic_View()
+FOR_obj.run()
