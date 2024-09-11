@@ -628,9 +628,14 @@ class Forensic_View():
             data_list.append(data)
             print("[+] Recevied " + key)
         
-        # Create a table object for each key
+        # Create a "table" objects for each key
         table_objects_dict = {}
+        # Create "scrollbar" objects for each key
+        scrollbar_objects_vertical_dict = {}
+        scrollbar_objects_horizontal_dict = {}
         for index, key in enumerate(sources_dict):
+
+            # TreeView TABLE object
             column_identifiers = (0,)
             for i in range(len(data_list[index][0])):
                 column_identifiers += (i+1,)
@@ -652,7 +657,27 @@ class Forensic_View():
             # initialize the table
             table_objects_dict[key].pack(expand=True,fill="both")
             
-        
+            # scrollbar for each object
+            scrollbar_objects_vertical_dict[key] = ttk.Scrollbar(master=self.tabview.tab(key),
+                                            orient='vertical',
+                                            command=table_objects_dict[key].yview)
+            table_objects_dict[key].configure(yscrollcommand=scrollbar_objects_vertical_dict[key].set)
+            scrollbar_objects_vertical_dict[key].place(relx = 1,
+                                  rely = 0,
+                                  relheight = 1,
+                                  anchor = 'ne')
+            scrollbar_objects_horizontal_dict[key] = ttk.Scrollbar(master=self.tabview.tab(key),
+                                            orient='horizontal',
+                                            command=table_objects_dict[key].xview)
+            table_objects_dict[key].configure(xscrollcommand=scrollbar_objects_horizontal_dict[key].set)
+            scrollbar_objects_horizontal_dict[key].place(relx = 0,
+                                  rely = 1,
+                                  relwidth = 1,
+                                  anchor = 'sw')
+
+
+
+
 
 
     def run(self):
