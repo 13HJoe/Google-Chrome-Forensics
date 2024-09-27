@@ -70,10 +70,10 @@ def get_chrome_cookies(db=None):
         for host, cookies in result_data.items():
             #print("-"*60)
             #print(f"Host: {host}")
-            for cookies in cookies:
+            for cookie in cookies:
                 #print()
                 #print(cookies['name'])
-                res_table.append([host, cookies['name'], cookies["decrypted_value"]])
+                res_table.append([host, cookie['name'], cookie["decrypted_value"]])
                 '''
                 for key, val in cookies.items():
                     title = key.title().replace('_',' ')

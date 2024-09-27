@@ -371,8 +371,9 @@ class Chrome_Forensics:
             if host_key not in result_data:
                 result_data[host_key] = []
             result_data[host_key].append(data)
-        
+        res_table = [["Host", "Name", "Value"]]
         for host, cookies in result_data.items():
+            """         
             print("-"*60)
             print(f"Host: {host}")
             for cookie in cookies:
@@ -384,7 +385,14 @@ class Chrome_Forensics:
                     except:
                         pass
                 print()
- 
+            """ 
+            
+            for cookie in cookies:
+                res_table.append([host, cookie['name'], cookie['decrypted_value']])
+        
+        return res_table
+
+
     def get_credit_card_info(self):
         db_path = self.base_path + "Default/Web Data"
         query = "SELECT * FROM credit_cards;"
@@ -657,6 +665,8 @@ class Forensic_View():
                 print(key)
                 sys.exit(0)
             self.data_list.append(data)
+            if key == "Browser Cookies":
+                print(data)
             print("[+] Recevied " + key)
         
         # Create a FRAME to prevent overlap
@@ -731,7 +741,7 @@ class Forensic_View():
 
     def run(self):
         source_list = {"Login Data":"chrome_passwords",
-                       #"Browser Cookies":"chrome_cookies"
+                       "Browser Cookies":"chrome_cookies",
                        "Credit Card Data":"credit_card_info",
                        "Navigation":"navigation_history",
                        "Downloads":"download_history",
@@ -746,5 +756,5 @@ class Forensic_View():
         self.app.mainloop()
 
 
-obj = Chrome_Forensics()
-print(obj.get_chrome_cookies())
+obj = Forensic_View()
+obj.run()
