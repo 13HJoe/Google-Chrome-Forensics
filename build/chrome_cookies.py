@@ -63,19 +63,30 @@ def get_chrome_cookies(db=None):
                 result_data[host_key] = []
             result_data[host_key].append(data)
         
-        print(len(result_data))
+        #print(len(result_data))
+        res_table = [["Host","Name","Decrypted Value"]]
         result_data = result_data
         c = 0
         for host, cookies in result_data.items():
-            print("-"*60)
-            print(f"Host: {host}")
+            #print("-"*60)
+            #print(f"Host: {host}")
             for cookies in cookies:
-                print()
+                #print()
+                #print(cookies['name'])
+                res_table.append([host, cookies['name'], cookies["decrypted_value"]])
+                '''
                 for key, val in cookies.items():
                     title = key.title().replace('_',' ')
-                    print(f"{title}:{val}")
-                print()
+                    try:
+                        #print(f"{title}:{val}")
+                        res_table.append([host, title, val])
+                    except:
+                        pass
+                '''
+                #print()
         connection.close()
+        for line in res_table:
+            print(line)
 
 
 

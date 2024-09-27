@@ -1,4 +1,4 @@
-import os
+"""import os
 import sqlite3
 from customtkinter import *
 import re
@@ -66,13 +66,19 @@ label.pack(anchor='s', expand=True, pady=0.5, padx=1)
 searchbox = CTkEntry(master=tabview.tab("Top Sites"))
 searchbtn = CTkButton(master=tabview.tab("Top Sites"), text="search",
                       command=search(10))
-"""
 for direct modules
 note this down dumbfuck -> callback functions NO FUCKING ARGUMENTS AT ALL - DON'T BREAK SHIT 
-"""
 searchbox.pack(expand=True)
 searchbtn.pack(expand=True)
 
 
 app.resizable(width=False, height=False)
-app.mainloop()
+app.mainloop()"""
+
+from PIL import ImageTk
+from tkinter import *
+from customtkinter import *
+root = CTk()
+icon_path = ImageTk.PhotoImage(r"C:\Users\josep\RootJoseph\STUDY\Tool-Projects\Chrome-Forensics\build\gui\b64.png")
+open_icon  = root.iconbitmap(False, icon_path)
+root.mainloop()
