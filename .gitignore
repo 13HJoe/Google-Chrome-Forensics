@@ -1,7 +1,7 @@
 test/
 out/
 parsed cache/
-build/out/
+build/
 src/out/
 src/parsed cache/
 build/gui/cust_test.py

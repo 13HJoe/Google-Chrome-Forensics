@@ -175,11 +175,11 @@ class Data:
             self.headers = {}
             data_copy = data_copy.split(b'\x00')[1:]
             for line in data_copy:
-                print(line)
+                #print(line)
                 temp = line.split(b':')
                 v = b':'.join(temp[1:])
                 v = v.decode(encoding='utf-8')
-                print(temp[0].decode(),':',v)
+                #print(temp[0].decode(),':',v)
                 k = temp[0].decode(encoding='utf-8').lower()
                 self.headers[k] = v
 
@@ -617,11 +617,11 @@ class Forensic_View():
         self.app.rowconfigure(0, weight=1)
         self.app.title("Chrome Forensics")
         self.app.resizable(False, False)
-        icon = PhotoImage(data="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")
-        self.app.iconphoto(False, icon)
-        self.data_obj = Chrome_Forensics()
+        
         self.tabview = CTkTabview(master=self.app, segmented_button_selected_color="#08131f")
         self.tabview.pack(fill=BOTH)
+
+        self.data_obj = Chrome_Forensics()
     
     def search_view(self, source_key, source_index):
         search_term = self.search_field_objects[source_key].get()
@@ -659,14 +659,15 @@ class Forensic_View():
         for index, key in enumerate(sources_dict):
             self.tabview.add(key)
             source_name = "get_" + sources_dict[key]
-            data = getattr(self.data_obj, source_name)() # returns list of lists
+            try:
+                data = getattr(self.data_obj, source_name)() # returns list of lists
+            except:
+                continue
             if data == None or len(data) == 0:
                 print(data)
                 print(key)
                 sys.exit(0)
             self.data_list.append(data)
-            if key == "Browser Cookies":
-                print(data)
             print("[+] Recevied " + key)
         
         # Create a FRAME to prevent overlap
@@ -680,6 +681,9 @@ class Forensic_View():
         self.search_field_objects = {}
         search_button_objects = {}
         for index, key in enumerate(sources_dict):
+
+            if index >= len(self.data_list):
+                break
 
             self.table_frames[key] = CTkFrame(master=self.tabview.tab(key))
             self.table_frames[key].pack(expand=True, fill="both")
@@ -741,7 +745,7 @@ class Forensic_View():
 
     def run(self):
         source_list = {"Login Data":"chrome_passwords",
-                       "Browser Cookies":"chrome_cookies",
+                       #"Browser Cookies":"chrome_cookies",
                        "Credit Card Data":"credit_card_info",
                        "Navigation":"navigation_history",
                        "Downloads":"download_history",
@@ -751,7 +755,7 @@ class Forensic_View():
                        "Top Sites":"top_sites"}
         
         test_list = {"Bookmarks":"bookmarks"}
-
+        #self.data_obj.cache_parse()
         self.add_tab_views(source_list)
         self.app.mainloop()
 
