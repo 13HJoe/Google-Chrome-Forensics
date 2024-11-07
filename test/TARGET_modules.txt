@@ -1,0 +1,14 @@
+DB & JSON
+Encrypted
+- login data 
+- credit card 
+- cookies 
+Plaintext
+- History
+  - Navigation
+  - Google Search
+  - Downloads
+- Bookmarks
+- Autofill : Address Data
+
+CACHE

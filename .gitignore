@@ -1,8 +1,0 @@
-test/
-out/
-parsed cache/
-build/
-src/out/
-src/parsed cache/
-build/gui/cust_test.py
-build/gui/cust_frame.py
