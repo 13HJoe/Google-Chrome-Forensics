@@ -629,7 +629,7 @@ class Forensic_View():
         comp_string = ""
         for char in str(search_term):
             if char==".":
-                comp_string += "\."
+                comp_string += "\\."
             else:
                 comp_string += char
 
@@ -662,7 +662,7 @@ class Forensic_View():
             try:
                 data = getattr(self.data_obj, source_name)() # returns list of lists
             except:
-                continue
+                data = ["Placeholder"]
             if data == None or len(data) == 0:
                 print(data)
                 print(key)
@@ -745,7 +745,7 @@ class Forensic_View():
 
     def run(self):
         source_list = {"Login Data":"chrome_passwords",
-                       #"Browser Cookies":"chrome_cookies",
+                       "Browser Cookies":"chrome_cookies",
                        "Credit Card Data":"credit_card_info",
                        "Navigation":"navigation_history",
                        "Downloads":"download_history",
@@ -755,7 +755,7 @@ class Forensic_View():
                        "Top Sites":"top_sites"}
         
         test_list = {"Bookmarks":"bookmarks"}
-        #self.data_obj.cache_parse()
+        self.data_obj.cache_parse()
         self.add_tab_views(source_list)
         self.app.mainloop()
 
