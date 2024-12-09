@@ -4,6 +4,7 @@ import sqlite3
 import base64
 import win32crypt
 from Crypto.Cipher import AES
+import datetime
 
 db_top_sites = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/Default/Top Sites")
 
@@ -21,7 +22,7 @@ def exec_query(query):
     except:
         return None
 
-query = "SELECT * FROM sqlite_master WHERE type = 'table'; "
+'''query = "SELECT * FROM sqlite_master WHERE type = 'table'; "
 data = exec_query(query=query)
 for line in data:
     table_name = line[1]
@@ -32,10 +33,38 @@ for line in data:
         for line in table_data:
             print(line)
     print("-"*50)
+'''
+def date_from_webkit(timestamp=1731030757):
+    # convert webkit_timestamp to readable format
+    epoch_start = datetime.datetime(2001,1,1)
+    delta = datetime.timedelta(minutes=int(timestamp))
+    return epoch_start + delta
 
+def autof():
+    data = exec_query("SELECT name, value from autofill;")
+    ret_data = [["Field Name","Value"]]
+    for line in data:
+        l = [line[0], line[1]]
+        ret_data.append(l)
+        print(l)
+
+def test():
+    data = exec_query("SELECT * FROM keywords;")
+    for line in data:
+        print(line)
+
+test()
+
+
+
+
+
+
+'''
 data = exec_query("SELECT * FROM top_sites ORDER BY url_rank ASC;")
 for line in data:
     print(type(line),line)
+'''   
 '''
 query = "SELECT * FROM contact_info"
 connection = sqlite3.connect(db)

