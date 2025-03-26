@@ -53,7 +53,10 @@ try:
 
     decrypted_key = binascii.a2b_base64(decrypted_key_b64)[-61:]
 
-    assert(decrypted_key[0] == 1)
+    print(decrypted_key)
+
+    print(decrypted_key[0])
+    #assert(decrypted_key[0] == 1)
 
 finally:
     c.remove_service()
@@ -86,7 +89,7 @@ con.close()
 def decrypt_cookie_v20(encrypted_value):
     cookie_iv = encrypted_value[3:3+12]
     encrypted_cookie = encrypted_value[3+12:-16]
-    print(encrypted_cookie)
+    #print(encrypted_cookie)
     cookie_tag = encrypted_value[-16:]
     cookie_cipher = AES.new(key, AES.MODE_GCM, nonce=cookie_iv)
     decrypted_cookie = cookie_cipher.decrypt_and_verify(encrypted_cookie, cookie_tag)
